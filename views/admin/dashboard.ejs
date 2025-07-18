@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <title>Dashboard</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <link rel="stylesheet" href="/assets/vendors/mdi/css/materialdesignicons.min.css">
+    <link rel="stylesheet" href="/assets/vendors/css/vendor.bundle.base.css">
+    <link rel="stylesheet" href="/assets/css/style.css">
+    <link rel="shortcut icon" href="/assets/images/favicon.png" />
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+
+</head>
+<body>
+    <div class="container-scroller">
+        <%- include('partials/sidebar') %>
+        <%- include('partials/navbar') %>
+
+        <div class="main-panel">
+            <div class="content-wrapper">
+                <!-- Time Period Filter -->
+                <div class="row">
+                    <div class="col-md-4 mb-3">
+                        <select id="timePeriodFilter" class="form-control" onchange="updateDashboardData()">
+                            <option value="daily">Daily</option>
+                            <option value="weekly">Weekly</option>
+                            <option value="monthly" selected>Monthly</option>
+                            <option value="yearly">Yearly</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Summary Cards -->
+                <div class="row">
+                    <div class="col-md-4 mb-4">
+                        <div class="card">
+                            <div class="card-body">
+                                <h5>Total Orders</h5>
+                                <h3 id="totalSalesCount">0</h3>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4 mb-4">
+                        <div class="card">
+                            <div class="card-body">
+                                <h5>Total Revenue</h5>
+                                <h3 id="totalRevenue">₹0.00</h3>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4 mb-4">
+                        <div class="card">
+                            <div class="card-body">
+                                <h5>Total Users</h5>
+                                <h3 id="totalUsers">0</h3>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Charts Section -->
+                <div class="row">
+                    <div class="col-md-6 mb-4">
+                        <canvas id="totalSalesChart"></canvas>
+                    </div>
+                    <div class="col-md-6 mb-4">
+                        <canvas id="totalRevenueChart"></canvas>
+                    </div>
+                </div>
+
+                <!-- Tables Section -->
+                <div class="row">
+                    <div class="col-md-6">
+                        <h4>Best Selling Products</h4>
+                        <table class="table" id="bestSellingProductsTable">
+                            <thead>
+                                <tr>
+                                    <th>Product Name</th>
+                                    <th>Total Sold</th>
+                                </tr>
+                            </thead>
+                            <tbody></tbody>
+                        </table>
+                    </div>
+                    <div class="col-md-6">
+                        <h4>Best Selling Categories</h4>
+                        <table class="table" id="bestSellingCategoriesTable">
+                            <thead>
+                                <tr>
+                                    <th>Category Name</th>
+                                    <th>Total Sold</th>
+                                </tr>
+                            </thead>
+                            <tbody></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Frontend Script for Fetching Data and Updating UI -->
+    <script>
+        let totalSalesChart, totalRevenueChart;
+    
+        async function updateDashboardData() {
+            const period = document.getElementById('timePeriodFilter').value;
+            try {
+                const response = await axios.get(`/admin/dashboard-data?period=${period}`);
+                const { salesSummary, bestSellingProducts, bestSellingCategories, totalUsers, dailyRevenue } = response.data;
+    
+                // Updating Summary Cards
+                document.getElementById('totalSalesCount').innerText = salesSummary.totalSalesCount || 0;
+                document.getElementById('totalRevenue').innerText = `₹${(salesSummary.totalRevenue || 0).toFixed(2)}`;
+                document.getElementById('totalUsers').innerText = totalUsers || 0;
+    
+                // Updating Charts
+                updateTotalSalesChart(bestSellingProducts);
+                updateTotalRevenueChart(dailyRevenue);
+    
+                // Updating Tables
+                updateTable('bestSellingProductsTable', bestSellingProducts);
+                updateTable('bestSellingCategoriesTable', bestSellingCategories);
+            } catch (error) {
+                console.error("Error fetching dashboard data:", error);
+            }
+        }
+    
+        // Function to update the bar chart for product orders
+        function updateTotalSalesChart(bestSellingProducts) {
+            if (totalSalesChart) totalSalesChart.destroy();
+    
+            const labels = bestSellingProducts.map(product => product.name);
+            const data = bestSellingProducts.map(product => product.totalSold);
+    
+            totalSalesChart = new Chart(document.getElementById('totalSalesChart').getContext('2d'), {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Orders',
+                        data: data,
+                        backgroundColor: '#4CAF50'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    scales: {
+                        y: { beginAtZero: true }
+                    }
+                }
+            });
+        }
+    
+        // Function to update the line chart for revenue
+        function updateTotalRevenueChart(dailyRevenue) {
+            if (totalRevenueChart) totalRevenueChart.destroy();
+    
+            const labels = dailyRevenue.map(entry => entry._id); // _id is the date
+            const data = dailyRevenue.map(entry => entry.totalRevenue);
+    
+            totalRevenueChart = new Chart(document.getElementById('totalRevenueChart').getContext('2d'), {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Revenue',
+                        data: data,
+                        borderColor: '#FF5722',
+                        fill: false,
+                        tension: 0.1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    scales: {
+                        y: { beginAtZero: true }
+                    }
+                }
+            });
+        }
+    
+        // Function for updating tables
+        function updateTable(tableId, data) {
+            const tableBody = document.getElementById(tableId).querySelector('tbody');
+            tableBody.innerHTML = '';
+            data.forEach(item => {
+                const name = item.name || item.categoryName; // Ensure you have a fallback here
+                const row = `<tr><td>${name}</td><td>${item.totalSold}</td></tr>`;
+                tableBody.insertAdjacentHTML('beforeend', row);
+            });
+        }
+    
+        // Initialize the dashboard data
+        updateDashboardData();
+    </script>
+    
+</body>
+</html>

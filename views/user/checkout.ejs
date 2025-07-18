@@ -1,0 +1,520 @@
+<%- include("partials/header.ejs") %>
+
+	<link rel="stylesheet"  href="/css/checkout.css">
+	<!--===============================================================================================-->
+	
+	<!-- breadcrumb -->
+	<div class="container" style="margin-top: 70px;">
+		<div class="bread-crumb flex-w p-l-25 p-r-15 p-t-30 p-lr-0-lg">
+			<a href="/home" class="stext-109 cl8 hov-cl1 trans-04">
+				Home
+				<i class="fa fa-angle-right m-l-9 m-r-10" aria-hidden="true"></i>
+			</a>
+            <a href="/cart" class="stext-109 cl8 hov-cl1 trans-04">
+				Cart
+				<i class="fa fa-angle-right m-l-9 m-r-10" aria-hidden="true"></i>
+			</a>
+			
+			<span class="stext-109 cl4">
+				 Checkout
+			</span>
+		</div>
+	</div>
+
+<!-- Header Section End -->
+ <body class="animsition">
+    
+
+    <!-- Modal for Adding New Address -->
+    
+
+<div class="modal fade" id="addAddressModal" tabindex="-1" role="dialog" aria-labelledby="addAddressModalLabel" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="addAddressModalLabel">Add New Address</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form id="newAddressForm" method="post" action="/addNewAddress">
+                    <div class="form-group">
+                        <label for="newName">Full Name</label>
+                        <input type="text" class="form-control" id="newName"  required>
+                    </div>
+                    <div class="form-group">
+                        <label for="newAddress">Address</label>
+                        <input type="text" class="form-control" id="newAddress"required>
+                    </div>
+                    <div class="form-group">
+                        <label for="newLocality">locality</label>
+                        <input type="text" class="form-control" id="newLocality"required>
+                    </div>
+                    <div class="form-group">
+                        <label for="newCity">City</label>
+                        <input type="text" class="form-control" id="newCity"  required>
+                    </div>
+                    <div class="form-group">
+                        <label for="newState">State</label>
+                        <input type="text" class="form-control" id="newState"  required>
+                    </div>
+                    <div class="form-group">
+                        <label for="newPhone">Mobile</label>
+                        <input type="text" class="form-control" id="newPhone" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="newPincode">Postal Code</label>
+                        <input type="text" class="form-control" id="newPincode" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="newAlternatePhone">alternate Number</label>
+                        <input type="text" class="form-control" id="newAlternatePhone" >
+                    </div>
+                    <div class="form-group">
+                        <label for="newLandmark">Landmark</label>
+                        <input type="text" class="form-control" id="newLandmark" >
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btnc btn-secondary" data-dismiss="modal">Cancel</button>
+                <button type="button" class="btnc btn-primary" onclick="saveNewAddress()">Save Address</button>
+            </div>
+        </div>
+    </div>
+</div>
+    <div class="container py-5">
+  <h2 class="mb-4">Checkout</h2>
+  <div class="row">
+    <!-- Left Column: Cart Items and Totals -->
+    <div class="col-md-6">
+      <h4>Your Cart Items</h4>
+      <% if (items.length > 0) { %>
+        <ul class="list-group mb-4" style="max-height: 400px; overflow-y: auto;">
+          <% items.forEach(item => { %>
+            <li class="list-group-item d-flex justify-content-between align-items-center">
+              <div class="d-flex align-items-center">
+                <img src="/<%= item.imageUrl %>" alt="<%= item.name %>" width="70" height="90" class="me-3">
+                <div>
+                  <strong><%= item.name %></strong><br>
+                  Qty: <%= item.quantity %>
+                </div>
+              </div>
+              <span>₹<%= item.price * item.quantity %></span>
+            </li>
+          <% }) %>
+        </ul>
+      <% } else { %>
+        <p>Your cart is empty.</p>
+      <% } %>
+
+      <div class="card p-3">
+        <div class="d-flex justify-content-between">
+          <span>Subtotal:</span>
+          <span>₹<%= cartTotal %></span>
+        </div>
+        <div class="d-flex justify-content-between">
+          <span>Discount:</span>
+          <span id="discountAmount">- ₹0</span>
+        </div>
+        <div class="d-flex justify-content-between">
+          <span>Delivery Charge:</span>
+          <span id="deliveryCharge">₹ 99</span>
+        </div>
+        <div class="d-flex justify-content-between fw-bold">
+          <span>Total:</span>
+          <span id="totalAmount">₹<%= cartTotal %></span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right Column: Address and Payment -->
+    <div class="col-md-6">
+      <h4>Select Saved Address</h4>
+      <form id="checkoutForm">
+        <div class="mb-3">
+          <% if (addresses.length > 0) { %>
+            <select id="addressSelect" class="form-select" onchange="selectAddressFromDropdown()" required>
+              <option value="">-- Select Address --</option>
+              <% addresses.forEach(address => { %>
+                <option value="<%= address._id %>" 
+                  data-name="<%= address.name %>" 
+                  data-address="<%= address.address %>" 
+                  data-locality="<%= address.locality %>" 
+                  data-city="<%= address.city %>" 
+                  data-state="<%= address.state %>" 
+                  data-phone="<%= address.phone %>" 
+                  data-pincode="<%= address.pincode %>" 
+                  data-alternatePhone="<%= address.alternatePhone %>" 
+                  data-landmark="<%= address.landmark %>">
+                  <%= address.name %>: <%= address.address %>, <%= address.locality %>, <%= address.city %>
+                </option>
+                
+              <% }) %>
+            </select>
+            
+          <% } else { %>
+            <p class="text-danger">No saved addresses found. Please add a new address.</p>
+          <% } %>
+        </div>
+
+        <button type="button" class="btn btn-outline-secondary mb-3" data-toggle="modal" data-target="#addAddressModal">Add New Address</button>
+        
+
+        <!-- Hidden Inputs for Address -->
+        <input type="hidden" id="selectedAddress" name="addressId" required>
+        <input type="hidden" id="name" name="name" required>
+        <input type="hidden" id="address" name="address" required>
+        <input type="hidden" id="locality" name="locality" required>
+        <input type="hidden" id="city" name="city" required>
+        <input type="hidden" id="state" name="state" required>
+        <input type="hidden" id="phone" name="phone" required>
+        <input type="hidden" id="pincode" name="pincode" required>
+        <input type="hidden" id="alternatePhone" name="alternatePhone">
+        <input type="hidden" id="landmark" name="landmark">
+
+        <h4 class="mt-4">Payment Method</h4>
+        <div class="form-check mb-3">
+          <input class="form-check-input" type="radio" name="paymentMethod" id="cashOnDelivery" value="cod" required>
+          <label class="form-check-label" for="cashOnDelivery">Cash on Delivery</label>
+        </div>
+
+        <button type="submit" class="btn btn-success w-100">Place Order</button>
+      </form>
+    </div>
+  </div>
+</div>
+<script>
+document.querySelector("#checkoutForm").addEventListener("submit", handleCODPayment);
+
+async function handleCODPayment(e) {
+    e.preventDefault();
+
+    // Collect form data
+    const formData = new FormData(document.querySelector("#checkoutForm"));
+    const formDataObject = Object.fromEntries(formData.entries());
+
+    try {
+        const response = await fetch('/checkoutCOD', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(formDataObject),
+        });
+
+        if (!response.ok) {
+            const errorText = await response.text();
+            throw new Error(errorText || 'Failed to place order with Cash on Delivery');
+        }
+
+        const data = await response.json();
+
+        // Redirect to order success page
+        console.log("Redirecting to success with orderId:", data.orderId);
+        window.location.href = `/orderSuccess?orderId=${data.orderId}`;
+    } catch (error) {
+        console.error('COD Order Error:', error);
+
+        Swal.fire({
+            icon: 'error',
+            title: 'Error',
+            text: error.message || 'An error occurred while placing your order. Please try again.',
+        });
+    }
+}
+</script>
+
+
+<script>
+    function selectAddressFromDropdown() {
+        const selectedOption = document.getElementById('addressSelect').selectedOptions[0];
+        document.getElementById('selectedAddress').value = selectedOption.value;
+        document.getElementById('name').value = selectedOption.getAttribute('data-name');
+        document.getElementById('address').value = selectedOption.getAttribute('data-address');
+        document.getElementById('locality').value = selectedOption.getAttribute('data-locality');
+        document.getElementById('city').value = selectedOption.getAttribute('data-city');
+        document.getElementById('state').value = selectedOption.getAttribute('data-state');
+        document.getElementById('phone').value = selectedOption.getAttribute('data-phone');
+        document.getElementById('pincode').value = selectedOption.getAttribute('data-pincode');
+        document.getElementById('alternatePhone').value = selectedOption.getAttribute('data-alternatePhone');
+        document.getElementById('landmark').value = selectedOption.getAttribute('data-landmark');
+    }
+</script>
+
+
+                       
+<!-- Modal to Add New Address -->
+
+<script>
+    // Function to handle saving the new address and adding it to the form
+       
+    async function saveNewAddress() {
+        const name = document.getElementById('newName').value;
+        const address = document.getElementById('newAddress').value;
+        const locality = document.getElementById('newLocality').value;
+        const city = document.getElementById('newCity').value;
+        const state = document.getElementById('newState').value;
+        const pincode = document.getElementById('newPincode').value;
+        const phone = document.getElementById('newPhone').value;
+        const alternatePhone = document.getElementById('newAlternatePhone').value;
+        const landmark = document.getElementById('newLandmark').value; 
+
+    const userId = '<%= userId %>';  // Assume user ID is available on the server-side.
+
+    try {
+        const response = await fetch('/addNewAddress', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                userId,name, address, locality, city, state, phone, pincode, alternatePhone, landmark,
+            }),
+        });
+
+        const result = await response.json();
+
+        if (result.success) {
+            Swal.fire({
+                icon: 'success',
+                title: 'Success',
+                text: 'Address saved successfully!',
+                timer: 2000,
+                showConfirmButton: false,
+            }).then(() => {
+                window.location.reload();
+            });
+        } else {
+            Swal.fire({
+                icon: 'error',
+                title: 'Error',
+                text: result.message || 'Failed to save the address.',
+            });
+        }
+    } catch (error) {
+        console.error('Error saving address:', error);
+        Swal.fire({
+            icon: 'error',
+            title: 'Error',
+            text: 'An error occurred while saving the address.',
+        });
+    }
+}
+
+</script>
+
+
+<script>
+    function showAddAddressForm() {
+        document.getElementById('newAddressForm').style.display = 'block';
+        // Clear selected address if adding a new one
+        document.getElementById('addressSelect').value = '';
+        clearSelectedAddressInputs();
+    }
+
+
+       
+function clearSelectedAddressInputs() {
+    document.getElementById('selectedAddress').value = '';
+    document.getElementById('name').value = '';
+    document.getElementById('address').value = '';
+    document.getElementById('locality').value = '';
+    document.getElementById('city').value = '';
+    document.getElementById('state').value = '';
+    document.getElementById('phone').value = '';
+    document.getElementById('pincode').value = '';
+    document.getElementById('alternatePhone').value = '';
+    document.getElementById('landmark').value = '';
+}
+      
+    </script>
+
+
+
+<script>
+    // Elements for delivery charge and total calculation
+    const deliveryChargeElement = document.getElementById('deliveryCharge');
+    const totalAmountElement = document.getElementById('totalAmount');
+    const subtotalElement = document.querySelector('div.d-flex span:nth-child(2)');
+
+    // Fixed delivery charge value
+    const fixedDeliveryCharge = 99;
+
+    // Update delivery and total dynamically
+    function updateTotal() {
+        // Parse subtotal (remove ₹ symbol)
+        const subtotal = parseFloat(subtotalElement.textContent.replace('₹', '')) || 0;
+
+        let shippingCharge = 0;
+
+        // Check if subtotal < 1000, apply delivery charge
+        if (subtotal < 1000) {
+            shippingCharge = fixedDeliveryCharge;
+            deliveryChargeElement.textContent = `₹${fixedDeliveryCharge}`;
+        } else {
+            shippingCharge = 0;
+            deliveryChargeElement.textContent = `Free`;
+        }
+
+        // Calculate grand total
+        const total = subtotal + shippingCharge;
+
+        // Display the updated total
+        totalAmountElement.textContent = `₹${total.toFixed(2)}`;
+    }
+
+    // Run update on page load
+    document.addEventListener('DOMContentLoaded', updateTotal);
+</script>
+
+
+
+
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<!-- SweetAlert JS -->
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11.7.0/dist/sweetalert2.min.js"></script>
+   
+
+<!-- Footer -->
+	<footer class="bg3 p-t-75 p-b-32">
+		<div class="container">
+			<div class="row">
+				<div class="col-sm-6 col-lg-4 p-b-50">
+					<h4 class="stext-301 cl0 p-b-30">
+						Categories
+					</h4>
+					<ul>
+						<li class="p-b-10">
+							<a href="#" class="stext-107 cl7 hov-cl1 trans-04">
+								Fiction
+							</a>
+						</li>
+
+						<li class="p-b-10">
+							<a href="#" class="stext-107 cl7 hov-cl1 trans-04">
+								Non Fiction
+							</a>
+						</li>
+
+						<li class="p-b-10">
+							<a href="#" class="stext-107 cl7 hov-cl1 trans-04">
+								Kids
+							</a>
+						</li>
+
+						<li class="p-b-10">
+							<a href="#" class="stext-107 cl7 hov-cl1 trans-04">
+								Business
+							</a>
+						</li>
+					</ul>
+				</div>
+
+				<div class="col-sm-6 col-lg-4 p-b-50">
+					<h4 class="stext-301 cl0 p-b-30">
+						Help
+					</h4>
+
+					<ul>
+						<li class="p-b-10">
+							<a href="#" class="stext-107 cl7 hov-cl1 trans-04">
+								Track Order
+							</a>
+						</li>
+
+						<li class="p-b-10">
+							<a href="#" class="stext-107 cl7 hov-cl1 trans-04">
+								Returns 
+							</a>
+						</li>
+
+						<li class="p-b-10">
+							<a href="#" class="stext-107 cl7 hov-cl1 trans-04">
+								Shipping
+							</a>
+						</li>
+
+						<li class="p-b-10">
+							<a href="#" class="stext-107 cl7 hov-cl1 trans-04">
+								FAQs
+							</a>
+						</li>
+					</ul>
+				</div>
+
+				<div class="col-sm-6 col-lg-4 p-b-50">
+					<h4 class="stext-301 cl0 p-b-30">
+						GET IN TOUCH
+					</h4>
+
+					<p class="stext-107 cl7 size-201">
+						Any questions? Let us know in store at 8th floor, 379 Hudson St, New York, NY 10018 or call us on (+1) 96 716 6879
+					</p>
+
+					<div class="p-t-27">
+						<a href="#" class="fs-18 cl7 hov-cl1 trans-04 m-r-16">
+							<i class="fa fa-facebook"></i>
+						</a>
+
+						<a href="#" class="fs-18 cl7 hov-cl1 trans-04 m-r-16">
+							<i class="fa fa-instagram"></i>
+						</a>
+
+						<a href="#" class="fs-18 cl7 hov-cl1 trans-04 m-r-16">
+							<i class="fa fa-pinterest-p"></i>
+						</a>
+					</div>
+				</div>	
+			</div>
+		</div>
+	</footer>
+
+
+	<!-- Back to top -->
+	<div class="btn-back-to-top" id="myBtn">
+		<span class="symbol-btn-back-to-top">
+			<i class="zmdi zmdi-chevron-up"></i>
+		</span>
+	</div>
+    <!--===============================================================================================-->	
+	<script src="vendor/jquery/jquery-3.2.1.min.js"></script>
+<!--===============================================================================================-->
+	<script src="vendor/animsition/js/animsition.min.js"></script>
+<!--===============================================================================================-->
+	<script src="vendor/bootstrap/js/popper.js"></script>
+	<script src="vendor/bootstrap/js/bootstrap.min.js"></script>
+<!--===============================================================================================-->
+	<script src="vendor/select2/select2.min.js"></script>
+	<script>
+		$(".js-select2").each(function(){
+			$(this).select2({
+				minimumResultsForSearch: 20,
+				dropdownParent: $(this).next('.dropDownSelect2')
+			});
+		})
+	</script>
+<!--===============================================================================================-->
+	<script src="vendor/MagnificPopup/jquery.magnific-popup.min.js"></script>
+<!--===============================================================================================-->
+	<script src="vendor/perfect-scrollbar/perfect-scrollbar.min.js"></script>
+	<script>
+		$('.js-pscroll').each(function(){
+			$(this).css('position','relative');
+			$(this).css('overflow','hidden');
+			var ps = new PerfectScrollbar(this, {
+				wheelSpeed: 1,
+				scrollingThreshold: 1000,
+				wheelPropagation: false,
+			});
+
+			$(window).on('resize', function(){
+				ps.update();
+			})
+		});
+	</script>
+<!--===============================================================================================-->
+	<script src="js/main.js"></script>
+
+    
+</body>
+</html>

@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Verify OTP</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.1.3/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Poppins:300,400,500,600,700&display=swap">
+    <style>
+        body {
+            font-family: 'Poppins', sans-serif;
+           
+            background-image: url('/images/ai-generated-illustration-staircase-books-covering-steps-side-banister-ai-generated-illustration-303054293.webp');
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+            height: 100vh;
+        }
+        .overlay {
+            background-color: rgba(0, 0, 0, 0.5);
+            height: 100vh;
+        }
+        .otp-container {
+            background-color: white;
+            padding: 40px;
+            border-radius: 12px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            max-width: 400px;
+            width: 100%;
+        }
+        .otp-title {
+            font-weight: 600;
+            color: #1a73e8;
+            margin-bottom: 1.5rem;
+        }
+        .form-control {
+            border-radius: 8px;
+            padding: 12px;
+            border: 1px solid #e0e0e0;
+            transition: all 0.3s;
+        }
+        .form-control:focus {
+            border-color: #1a73e8;
+            box-shadow: 0 0 0 2px rgba(26, 115, 232, 0.2);
+        }
+        .btn-primary {
+            background-color: #1a73e8;
+            border: none;
+            border-radius: 8px;
+            padding: 12px;
+            font-weight: 500;
+            transition: all 0.3s;
+        }
+        .btn-primary:hover {
+            background-color: #1557b0;
+        }
+        .btn-link {
+            color: #1a73e8;
+            text-decoration: none;
+        }
+        .btn-link:hover {
+            text-decoration: underline;
+        }
+        .btn-link:disabled {
+            color: #b3d1ff;
+            cursor: not-allowed;
+        }
+        #timerDisplay {
+            text-align: center;
+            margin-top: 10px;
+            font-size: 0.9rem;
+            color: #757575;
+        }
+    </style>
+</head>
+<body>
+    <div class="overlay d-flex align-items-center justify-content-center">
+        <div class="otp-container">
+            <h3 class="text-center otp-title">Verify OTP</h3>
+            <% if (error) { %>
+                <div class="alert alert-danger"><%= error %></div>
+            <% } %>
+            <form action="/verify-otp" method="POST">
+                <div class="mb-3">
+                    <label for="otp" class="form-label">Enter the OTP sent to your email:</label>
+                    <input type="text" class="form-control" id="otp" name="otp" required pattern="\d{6}" title="Enter the 6-digit OTP sent to your email." placeholder="Enter 6-digit OTP">
+                </div>
+                <button type="submit" class="btn btn-primary w-100 mb-3">Verify OTP</button>
+                <div class="text-center">
+                    <button type="button" id="resendOTPBtn" class="btn btn-link" disabled>Resend OTP</button>
+                    <div id="timerDisplay"></div>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            let countdown = parseInt(localStorage.getItem('otpCountdown')) || 60;
+            const timerDisplay = document.getElementById('timerDisplay');
+            const resendButton = document.getElementById('resendOTPBtn');
+    
+            // Check if countdown is still valid (i.e., greater than 0)
+            if (countdown > 0) {
+                startTimer(); // Start the timer only if countdown is still valid
+            } else {
+                countdown = 60; // Reset to 60 if no valid countdown is found
+                updateTimerDisplay(); // Update the display to show 60 seconds
+                startTimer(); // Start the timer
+            }
+    
+            function updateTimerDisplay() {
+                const minutes = Math.floor(countdown / 60);
+                const seconds = countdown % 60;
+                timerDisplay.textContent = `Time remaining: ${minutes}:${seconds < 10 ? '0' : ''}${seconds} seconds`;
+            }
+    
+            function startTimer() {
+                resendButton.disabled = true; // Disable the resend button at the start
+                const timer = setInterval(function () {
+                    countdown--;
+                    updateTimerDisplay();
+                    localStorage.setItem('otpCountdown', countdown); 
+    
+                    if (countdown <= 0) {
+                        clearInterval(timer);
+                        countdown = 0;
+                        updateTimerDisplay();
+                        localStorage.removeItem('otpCountdown'); 
+                        resendButton.disabled = false; // Re-enable the resend button when countdown reaches 0
+                    }
+                }, 1000);
+            }
+    
+            resendButton.addEventListener('click', function () {
+                const email = '<%= email %>'; 
+                fetch('/resend-otp', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ email }), 
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        alert(data.message);
+                        countdown = 60; 
+                        updateTimerDisplay(); 
+                        startTimer(); // Restart the timer after resending the OTP
+                    } else {
+                        alert(data.message); 
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('Error resending OTP. Please try again.');
+                });
+            });
+        });
+    </script>
+    
+    
+</body>
+</html>

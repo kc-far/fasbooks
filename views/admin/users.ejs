@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <!-- Required meta tags -->
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <title>SAF-Admin</title>
+    <!-- plugins:css -->
+    <link rel="stylesheet" href="/assets/vendors/mdi/css/materialdesignicons.min.css">
+    <link rel="stylesheet" href="/assets/vendors/css/vendor.bundle.base.css">
+    <!-- endinject -->
+    <!-- Plugin css for this page -->
+    <link rel="stylesheet" href="/assets/vendors/jvectormap/jquery-jvectormap.css">
+    <link rel="stylesheet" href="/assets/vendors/flag-icon-css/css/flag-icon.min.css">
+    <link rel="stylesheet" href="/assets/vendors/owl-carousel-2/owl.carousel.min.css">
+    <link rel="stylesheet" href="/assets/vendors/owl-carousel-2/owl.theme.default.min.css">
+    <!-- End plugin css for this page -->
+    <!-- inject:css -->
+    <!-- endinject -->
+    <!-- Layout styles -->
+    <link rel="stylesheet" href="/assets/css/style.css">
+    <!-- End layout styles -->
+    <link rel="shortcut icon" href="/assets/images/favicon.png" />
+</head>
+<body>
+  <div class="container-scroller">
+    <!-- Sidebar -->
+    <%- include('partials/sidebar') %>
+    <!-- Navbar -->
+    <%- include('partials/navbar') %>
+
+    <!-- <p><%- users %><p> -->
+    
+    <div class="container-fluid page-body-wrapper">
+        <div class="main-panel">
+            <div class="content-wrapper">
+                <!-- Main content goes here -->
+                <div class="row">
+                    <div class="col-12 grid-margin">
+                        <div class="card">
+                            <div class="card-body">
+                                <h2 class="card-title">Users</h2>
+                                <div class="table-responsive">
+                                  <div class="container mt-5">
+                                    
+                                    <table class="table table-striped table-bordered">
+                                        <thead>
+                                            <tr>
+                                                <th>Client Name</th>
+                                                <th>Email</th>
+                                                <th>Status</th>
+                                                <th>Action</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <% if (users.length > 0) { %>
+                                                <% users.forEach(user => { %>
+                                                    <tr>
+                                                        <td><%= user.name %></td>
+                                                        <td><%= user.email %></td>
+                                                        <td>
+                                                            <div class="badge badge-<%= user.isBlocked ? 'danger' : 'success' %>">
+                                                                <%= user.isBlocked ? 'Inactive' : 'Active' %>
+                                                            </div>
+                                                        </td>
+                                                        <td>
+                                                            <% if (user.isBlocked) { %>
+                                                                <form id="unblockForm-<%= user._id %>" action="/admin/unblockUser" method="POST" style="display:inline;" onsubmit="return confirmAction(event, 'Are you sure you want to unblock this user?', this)">
+                                                                    <input type="hidden" name="userId" value="<%= user._id %>">
+                                                                    <button type="submit" class="btn btn-success">Unblock</button>
+                                                                </form>
+                                                            <% } else { %>
+                                                                <form id="blockForm-<%= user._id %>" action="/admin/blockUser" method="POST" style="display:inline;" onsubmit="return confirmAction(event, 'Are you sure you want to block this user?', this)">
+                                                                    <input type="hidden" name="userId" value="<%= user._id %>">
+                                                                    <button type="submit" class="btn btn-danger">Block</button>
+                                                                </form>
+                                                            <% } %>
+                                                        </td>
+                                                    </tr>
+                                                <% }); %>
+                                            <% } else { %>
+                                                <tr>
+                                                    <td colspan="4" class="text-center">No users found.</td>
+                                                </tr>
+                                            <% } %>
+                                        </tbody>
+                                        
+                                        <!-- SweetAlert2 -->
+                                        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
+                                        <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+                                        
+                                        <script>
+                                        function confirmAction(event, message, form) {
+                                            event.preventDefault(); // Prevent the form from submitting immediately
+                                        
+                                            // Show SweetAlert confirmation dialog
+                                            Swal.fire({
+                                                title: message,
+                                                icon: 'warning',
+                                                showCancelButton: true,
+                                                confirmButtonColor: '#3085d6',
+                                                cancelButtonColor: '#d33',
+                                                confirmButtonText: 'Yes',
+                                                cancelButtonText: 'No',
+                                                background: '#2f2f2f',  // Black theme background
+                                                color: '#fff'           // Text color white
+                                            }).then((result) => {
+                                                if (result.isConfirmed) {
+                                                    // Change button color if confirmed
+                                                    const button = form.querySelector('button');
+                                                    button.classList.remove('btn-success', 'btn-danger');
+                                                    button.classList.add('btn-secondary'); // You can adjust this color as needed
+                                        
+                                                    // Submit the form if the user confirms
+                                                    form.submit();
+                                                }
+                                            });
+                                        
+                                            return false; // Always prevent default form submission
+                                        }
+                                        </script>
+                                        
+                                    </table>
+                                
+                                    <!-- Pagination Controls -->
+                                    <nav aria-label="User pagination">
+                                        <ul class="pagination justify-content-center">
+                                            <% for (let i = 1; i <= totalPages; i++) { %>
+                                                <li class="page-item <%= currentPage === i ? 'active' : '' %>">
+                                                    <a class="page-link" href="?page=<%= i %>"><%= i %></a>
+                                                </li>
+                                            <% } %>
+                                        </ul>
+                                    </nav>
+                                </div>
+                                
+                                
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>        
+            </div>
+            <!-- Footer -->
+            <%- include('partials/footer') %>
+        </div>
+    </div>
+</div>
+
+    <!-- container-scroller -->
+    <!-- <script>
+        document.addEventListener('DOMContentLoaded', () => {
+          // Select all the block user buttons
+          const blockButtons = document.querySelectorAll('.block-user');
+      
+          blockButtons.forEach(button => {
+            // Add click event listener to each block button
+            button.addEventListener('click', async () => {
+              const userId = button.getAttribute('data-id');
+              
+              // Show confirmation dialog to the admin before blocking the user
+              const confirmBlock = confirm('Are you sure you want to block this user?');
+      
+              // If the admin cancels the action, stop here
+              if (!confirmBlock) {
+                console.log('Block action canceled by admin.');
+                return;  // Exit the function if not confirmed
+              }
+      
+              // If the admin confirms, proceed with blocking the user
+              try {
+                const response = await fetch(`/admin/block/${userId}`, {
+                  method: 'POST',
+                  headers: {
+                    'Content-Type': 'application/json'
+                  }
+                });
+      
+                if (response.ok) {
+                  const result = await response.json();
+                  console.log('User blocked successfully:', result.message);
+      
+                  // Update button state after successful blocking
+                  button.textContent = 'Blocked';
+                  button.classList.replace('btn-danger', 'btn-secondary');
+                  button.setAttribute('disabled', true);
+                } else {
+                  console.error('Failed to block user');
+                }
+              } catch (error) {
+                console.error('Error blocking user:', error);
+              }
+            });
+          });
+        });
+      </script> -->
+      
+
+    </script>
+    <!-- plugins:js -->
+    <script src="/assets/vendors/js/vendor.bundle.base.js"></script>
+    <!-- endinject -->
+    <!-- Plugin js for this page -->
+    <script src="/assets/vendors/chart.js/Chart.min.js"></script>
+    <script src="/assets/vendors/progressbar.js/progressbar.min.js"></script>
+    <script src="/assets/vendors/jvectormap/jquery-jvectormap.min.js"></script>
+    <script src="/assets/vendors/jvectormap/jquery-jvectormap-world-mill-en.js"></script>
+    <script src="/assets/vendors/owl-carousel-2/owl.carousel.min.js"></script>
+    <!-- End plugin js for this page -->
+    <!-- inject:js -->
+    <script src="/assets/js/off-canvas.js"></script>
+    <script src="/assets/js/hoverable-collapse.js"></script>
+    <script src="/assets/js/misc.js"></script>
+    <script src="/assets/js/settings.js"></script>
+    <script src="/assets/js/todolist.js"></script>
+    <!-- endinject -->
+    <!-- Custom js for this page -->
+    <script src="/assets/js/dashboard.js"></script>
+    <!-- End custom js for this page -->
+</body>
+</html>

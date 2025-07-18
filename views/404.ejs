@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    body {
+      margin: 0;
+      font-family: 'Arial', sans-serif;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      background: #f0f0f0;
+      color: #333;
+    }
+
+    .container {
+      text-align: center;
+    }
+
+    .error-code {
+      font-size: 100px;
+      font-weight: bold;
+      color: #ff6b6b;
+    }
+
+    .error-text {
+      font-size: 24px;
+      margin-bottom: 20px;
+      transition: opacity 0.5s ease-in-out;
+    }
+
+    .back-button {
+      display: inline-block;
+      padding: 10px 20px;
+      font-size: 18px;
+      background: #007bff;
+      color: #fff;
+      text-decoration: none;
+      border-radius: 5px;
+      transition: background 0.3s ease-in-out;
+    }
+
+    .back-button:hover {
+      background: #0056b3;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="error-code">404</div>
+    <div class="error-text">Oops! The page you are looking for does not exist.</div>
+    <a href="/" class="back-button">Go Back to Home</a>
+  </div>
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+  const errorText = document.querySelector('.error-text');
+  const backButton = document.querySelector('.back-button');
+
+  // Animate error text
+  if (errorText) {
+    errorText.style.opacity = 0;
+    setTimeout(() => {
+      errorText.style.opacity = 1;
+      errorText.style.transition = 'opacity 1s ease-in-out';
+    }, 500);
+  }
+
+  // Handle back button
+  if (backButton) {
+    backButton.addEventListener('click', () => {
+      window.location.href = '/'; // Redirect to homepage
+    });
+  }
+});
+</script>
+</body>
+</html>

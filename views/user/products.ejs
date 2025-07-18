@@ -1,0 +1,798 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<title>Product</title>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">	
+    <style>
+	  .wishlist-btn {
+		 font-size: 0.9rem;
+	   }
+	
+	</style>
+<!--===============================================================================================-->	
+	<link rel="icon" type="image/png" href="images/icons/favicon.png"/>
+<!--===============================================================================================-->
+	<link rel="stylesheet" type="text/css" href="/vendor/bootstrap/css/bootstrap.min.css">
+<!--===============================================================================================-->
+	<link rel="stylesheet" type="text/css" href="/fonts/font-awesome-4.7.0/css/font-awesome.min.css">
+<!--===============================================================================================-->
+	<link rel="stylesheet" type="text/css" href="/fonts/iconic/css/material-design-iconic-font.min.css">
+<!--===============================================================================================-->
+	<link rel="stylesheet" type="text/css" href="/fonts/linearicons-v1.0.0/icon-font.min.css">
+<!--===============================================================================================-->
+	<link rel="stylesheet" type="text/css" href="/vendor/animate/animate.css">
+<!--===============================================================================================-->	
+	<link rel="stylesheet" type="text/css" href="/vendor/css-hamburgers/hamburgers.min.css">
+<!--===============================================================================================-->
+	<link rel="stylesheet" type="text/css" href="/vendor/animsition/css/animsition.min.css">
+<!--===============================================================================================-->
+	<link rel="stylesheet" type="text/css" href="/vendor/select2/select2.min.css">
+<!--===============================================================================================-->	
+	<link rel="stylesheet" type="text/css" href="/vendor/daterangepicker/daterangepicker.css">
+<!--===============================================================================================-->
+	<link rel="stylesheet" type="text/css" href="/vendor/slick/slick.css">
+<!--===============================================================================================-->
+	<link rel="stylesheet" type="text/css" href="/vendor/MagnificPopup/magnific-popup.css">
+<!--===============================================================================================-->
+	<link rel="stylesheet" type="text/css" href="/vendor/perfect-scrollbar/perfect-scrollbar.css">
+<!--========================================== =====================================================-->
+	<link rel="stylesheet" type="text/css" href="css/util.css">
+	<link rel="stylesheet" type="text/css" href="css/main.css">
+<!--===============================================================================================-->
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<!-- Icon -->
+<link rel="icon" type="image/png" href="/images/icons/favicon.png"/>
+<script src="https://cdn.tailwindcss.com"></script>
+<!-- Bootstrap -->
+<link rel="stylesheet" type="text/css" href="/vendor/bootstrap/css/bootstrap.min.css">
+
+</head>
+<body class="animsition">
+	
+	<!-- Header -->
+	<header class="header-v4">
+		<!-- Header desktop -->
+		<div class="container-menu-desktop">
+			<!-- Topbar -->
+			<div class="top-bar">
+				<div class="content-topbar flex-sb-m h-full container">
+					<div class="left-top-bar">
+						Free shipping for standard order over $100
+					</div>
+
+					<div class="right-top-bar flex-w h-full" style="margin-top: 42px;">
+                        <a href="/contact" class="flex-c-m trans-04 p-lr-25">
+                            Help & FAQs
+                        </a>
+
+                        <a href="/profilePersonal" class="flex-c-m trans-04 p-lr-25">
+                            Account
+                        </a>
+
+                        <a href="/wallet" class="flex-c-m trans-04 p-lr-25">
+                            Wallet 
+                        </a>
+
+                        <form action="/logout" method="POST" style="display: inline;margin-top: -18px; padding-left: 10px;">
+                        	<button type="submit"  class="btn btn-secondary" style="margin-bottom: 20px;">Logout</button>
+                        </form>
+                    </div>
+				</div>
+			</div>
+
+			<div class="wrap-menu-desktop how-shadow1">
+				<nav class="limiter-menu-desktop container">
+					
+					
+					 <!-- Logo desktop -->     
+                    <a href="/home" class="logo">
+                        <img src="images/icons/logo-01.png" alt="IMG-LOGO">
+                    </a>
+
+					<!-- Menu desktop -->
+					<div class="menu-desktop">
+						<ul class="main-menu">
+							<li>
+								<a href="/home">Home</a>
+								
+							</li>
+
+							<li>
+								<a href="/products">Books</a>
+							</li>
+
+							<li>
+								<a href="/about">About</a>
+							</li>
+
+							<li>
+								<a href="/contact">Contact</a>
+							</li>
+						</ul>
+					</div>	
+
+					<!-- Icon header -->
+					<div class="wrap-icon-header flex-w flex-r-m">
+                        
+
+                        <div class="icon-header-item cl2 hov-cl1 trans-04 p-l-22 p-r-11  js-show-cart" >
+                            <a href="/cart">
+                                <i class="zmdi zmdi-shopping-cart"></i>
+                            </a>
+                        </div>
+
+                        <a href="/wishlist" class="dis-block icon-header-item cl2 hov-cl1 trans-04 p-l-22 p-r-11 " >
+                            <i class="zmdi zmdi-favorite-outline"></i>
+                        </a>
+                    </div>
+				</nav>
+			</div>	
+		</div>
+
+		<!-- Header Mobile -->
+		
+		<!-- Menu Mobile -->
+		
+		<!-- Modal Search -->
+		
+	</header>
+
+	<!-- Cart -->
+	
+	
+	<!-- Product -->
+	<div class="bg0 m-t-23 p-b-140">
+		<div class="container">
+			<div class="row">
+				<!-- Filter Sidebar (25% width) -->
+				<div class="col-lg-3 p-b-35">
+					<div class="filter-box p-lr-15 p-t-20">
+						<h5>Filter Products</h5>
+						<form id="filter-form">
+							<!-- Search Bar -->
+							<div class="filter-group">
+								<label for="search">Search:</label>
+								<input type="text" id="search" class="form-control" placeholder="Search products...">
+							</div>
+							<div class="filter-group">
+								<label for="sort">Sort By:</label>
+								<select id="sort" class="form-control">
+									<option value="price-low-high">Price: Low to High</option>
+									<option value="price-high-low">Price: High to Low</option>
+									<option value="average-ratings">Average Ratings</option>
+									<option value="new-arrivals">New Arrivals</option>
+									<option value="a-z">A-Z</option>
+									<option value="z-a">Z-A</option>
+									<option value="in-stock">In Stock</option>
+								</select>
+								<label for="category">Categories:</label>
+								<select id="category" class="form-control">
+									<option value="all">All</option>
+									<% categories.forEach(category => { %>
+										<option value="<%= category._id %>"><%= category.name %></option>
+									<% }); %>
+								</select>
+							</div>
+						</form>
+					</div>
+				</div>
+				
+	
+				<!-- Product Grid (75% width) -->
+				<div class="col-lg-9">
+					<div id="product-grid" class="row isotope-grid">
+						<% products.forEach(function(item) { %> 
+						<div class="col-sm-6 col-md-4 col-lg-4 p-b-35 isotope-item">
+							<div class="block2">
+								<div class="block2-pic hov-img0">
+									<img src="<%= item.images[0] %>" alt="IMG-PRODUCT">
+									<a href="/product-detail/<%= item._id %>" class="block2-btn flex-c-m stext-103 cl2 size-102 bg0 bor2 hov-btn1 p-lr-15">
+										Quick View
+									</a>
+								</div>
+								<div class="block2-txt flex-w flex-t p-t-14">
+									<div class="block2-txt-child1 flex-col-l">
+										<a href="/product-detail/<%= item._id %>" class="stext-104 cl4 hov-cl1 trans-04 js-name-b2 p-b-6">
+											<%= item.title %>
+										</a>
+										<span class="stext-105 cl3">
+											<% if (item.hasDiscount) { %>
+												<span style="text-decoration: line-through; color: red;">
+													₹<%= item.price.toFixed(2) %>
+												</span>
+												<span style="color: green; font-weight: bold;">
+													₹<%= item.discountedPrice.toFixed(2) %>
+												</span>
+											<% } else { %>
+												₹<%= item.price.toFixed(2) %>
+											<% } %>
+										</span>
+										
+										
+									</div>
+								</div>
+								
+								<div class="d-flex align-items-center mt-2"> <!-- Flex container for buttons -->
+									<!-- Wishlist Button -->
+									<form action="/wishlistAdd/<%= item._id %>" method="POST" id="wishlist-form-<%= item._id %>" class="me-2">
+										<input type="hidden" name="productId" value="<%= item._id %>">
+										<button type="button" class="btn btn-outline-secondary py-2 px-4 rounded wishlist-btn">
+											<i class="bi bi-bookmark"></i> wishlist
+										</button>
+									</form>
+								
+									<!-- Add to Cart Button -->
+									<form id="add-to-cart-form-<%= item._id %>">
+										<input type="hidden" name="productId" value="<%= item._id %>">
+										
+										<% if (item.stock > 0) { %>
+											<button type="submit" class="btn btn-outline-primary py-2 px-4 rounded"><i class="bi bi-cart-check me-1"></i> Add Cart</button>
+										<% } else { %>
+											<button type="button" class="btn btn-outline-danger py-2 px-4 rounded opacity-70 cursor-not-allowed" disabled>Sold Out</button>
+										<% } %>
+									</form>
+									
+								</div>
+								<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+								<script>
+								let isSubmitting = false;
+
+document.addEventListener('DOMContentLoaded', function() {
+	const wishlistButtons = document.querySelectorAll('.wishlist-btn');
+
+	wishlistButtons.forEach(button => {
+		button.addEventListener('click', function(e) {
+			e.preventDefault(); // Prevent default form submission
+
+			if (isSubmitting) return; // Prevent multiple submissions
+
+			const formElement = this.closest('form');
+			const productId = formElement.querySelector('input[name="productId"]').value;
+
+			isSubmitting = true;
+			button.disabled = true;
+
+			// Send AJAX request
+			fetch(formElement.action, {
+				method: 'POST',
+				body: JSON.stringify({ productId }),
+				headers: {
+					'Content-Type': 'application/json'
+				}
+			})
+			.then(response => response.json())
+			.then(data => {
+				if (data.success) {
+					// Change icon on success
+					button.innerHTML = '<i class="bi bi-bookmark-heart-fill me-1"></i> Wishlisted';
+					button.classList.add('wishlist-added');
+					button.disabled = true;
+
+					// Show SweetAlert success message
+					Swal.fire({
+						icon: 'success',
+						title: 'Added to Wishlist!',
+						text: 'The item has been successfully added to your wishlist.',
+						showConfirmButton: false,
+						timer: 1500
+					});
+				} else {
+					// Show SweetAlert error message
+					Swal.fire({
+						icon: 'error',
+						title: 'Oops...',
+						text: data.message || 'Could not add to wishlist.',
+					});
+					button.disabled = false;
+				}
+				isSubmitting = false;
+			})
+			.catch(error => {
+				console.error('Error:', error);
+
+				// Show SweetAlert for unexpected error
+				Swal.fire({
+					icon: 'error',
+					title: 'Unexpected Error',
+					text: 'An unexpected error occurred. Please try again later.',
+				});
+				button.disabled = false;
+				isSubmitting = false;
+			});
+		});
+	});
+});
+
+								</script>
+								
+							</div>
+						</div>
+						<% }); %>
+					</div>
+					
+				
+					<!-- Include SweetAlert script -->
+				
+					<script>
+						// Handle Add to Cart with SweetAlert
+						document.querySelectorAll('form[id^="add-to-cart-form-"]').forEach(form => {
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault(); // Prevent the form from submitting normally
+
+            const form = e.target;
+
+			console.log();
+			console.log(form);
+
+			let productId = form.id.split('-')[4] 
+			
+            const formData = new FormData(form);
+			formData.append('productId',form.id.split('-')[4])
+			
+            try {
+                console.log("Submitting form..."); 
+
+                const response = await fetch(`/cart/add/${productId}`, {
+                    method: 'POST',
+                });
+
+                // Ensure response is in JSON format
+                const data = await response.json(); // Parse the JSON response
+
+                console.log("Response data:", data); // Debugging message to check the response
+
+                // Handle success or failure based on the response
+                if (data.success) {
+                    // If successful, show a success alert with SweetAlert
+                    Swal.fire({
+                        title: 'Success',
+                        text: data.message, // Success message from the server
+                        icon: 'success',
+                        confirmButtonText: 'OK'
+                    });
+                } else {
+                    // If unsuccessful, show an error alert
+                    Swal.fire({
+                        title: 'Error',
+                        text: data.message, // Error message from the server
+                        icon: 'error',
+                        confirmButtonText: 'Try Again'
+                    });
+                }
+            } catch (error) {
+                // Handle any errors that occur during the fetch request
+                console.error('Error:', error);
+                Swal.fire({
+                    title: 'Error',
+                    text: 'An error occurred while adding the item to the cart.',
+                    icon: 'error',
+                    confirmButtonText: 'Try Again'
+                });
+            }
+        });
+    });
+
+					</script>
+					
+				</div>
+				<style>
+					.pagination-container {
+    display: flex;
+    justify-content: center;
+    margin-top: 20px;
+
+}
+.row{
+	justify-content: center;
+}
+.pagination {
+    display: flex;
+    list-style: none;
+    padding: 0;
+    gap: 8px;
+}
+
+.page-item {
+    display: inline-block;
+}
+
+.page-item .page-link {
+    display: inline-block;
+    padding: 8px 12px;
+    color: #007bff;
+    text-decoration: none;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    transition: all 0.3s ease;
+}
+
+.page-item .page-link:hover {
+    background-color: #007bff;
+    color: #fff;
+    border-color: #007bff;
+}
+
+.page-item.active .page-link {
+    background-color: #007bff;
+    color: #fff;
+    border-color: #007bff;
+}
+
+				</style>
+				<div class="pagination-container d-flex justify-content-center my-4">
+					<ul class="pagination">
+						<% for (let i = 1; i <= totalPages; i++) { %>
+							<li class="page-item <%= currentPage == i ? 'active' : '' %>">
+								<a class="page-link" href="?page=<%= i %><%= sort ? '&sort=' + encodeURIComponent(sort) : '' %><%= category ? '&category=' + encodeURIComponent(category) : '' %><%= search ? '&search=' + encodeURIComponent(search) : '' %>">
+									<%= i %>
+								</a>
+							</li>
+						<% } %>
+					</ul>
+				</div>
+				
+				
+				
+				
+					</div>
+			</div>
+		</div>
+	</div>
+	
+	<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+	<script>
+	$(document).ready(function () {
+		// Trigger fetchProducts on change of search, sort, or category fields
+		$('#search, #sort, #category').on('change keyup', function () {
+			fetchProducts(1); // Fetch products starting from page 1 with each change
+		});
+	
+		// Pagination click handler
+		$('#pagination').on('click', 'a', function (event) {
+			event.preventDefault();
+			const page = $(this).data('page');
+			fetchProducts(page);
+		});
+	});
+	
+	function fetchProducts(page = 1) {
+		const sort = $('#sort').val();
+		const category = $('#category').val();
+		const search = $('#search').val();
+	
+		$.ajax({
+			url: '/products',
+			type: 'GET',
+			data: { sort, category, search, page },
+			success: function (data) {
+				$('#product-grid').empty();
+				data.products.forEach(function (item) {
+					const productHtml = `
+						<div class="col-sm-6 col-md-4 col-lg-4 p-b-35 isotope-item">
+							<div class="block2">
+								<div class="block2-pic hov-img0">
+									<img src="${item.images[0]}" alt="IMG-PRODUCT">
+									<a href="/product-detail/${item._id}" class="block2-btn flex-c-m stext-103 cl2 size-102 bg0 bor2 hov-btn1 p-lr-15">Quick View</a>
+								</div>
+								<div class="block2-txt flex-w flex-t p-t-14">
+									<div class="block2-txt-child1 flex-col-l">
+										<a href="/product-detail/${item._id}" class="stext-104 cl4 hov-cl1 trans-04 js-name-b2 p-b-6">${item.title}</a>
+										<span class="stext-105 cl3">
+											${item.hasDiscount 
+												? `<span style="text-decoration: line-through; color: red;">$${item.price.toFixed(2)}</span>
+												   <span style="color: green; font-weight: bold;">$${item.discountedPrice.toFixed(2)}</span>`
+												: `$${item.price.toFixed(2)}`}
+										</span>
+									</div>
+								</div>
+							</div>
+						</div>`;
+					$('#product-grid').append(productHtml);
+				});
+	
+				// Update pagination
+				$('#pagination').empty();
+				for (let i = 1; i <= data.totalPages; i++) {
+					$('#pagination').append(`
+						<li class="page-item ${data.currentPage === i ? 'active' : ''}">
+							<a class="page-link" href="#" data-page="${i}">${i}</a>
+						</li>
+					`);
+				}
+	
+				// Attach wishlist button handlers
+				attachWishlistButtonHandlers();
+			},
+			error: function (err) {
+				console.error('Error fetching products:', err);
+			}
+		});
+	}
+	
+	function attachWishlistButtonHandlers() {
+		let isSubmitting = false;
+	
+		const wishlistButtons = document.querySelectorAll('.wishlist-btn');
+	
+		wishlistButtons.forEach(button => {
+			button.addEventListener('click', function(e) {
+				e.preventDefault(); // Prevent default form submission
+	
+				if (isSubmitting) return; // Prevent multiple submissions
+	
+				const formElement = this.closest('form');
+				const productId = formElement.querySelector('input[name="productId"]').value;
+	
+				isSubmitting = true;
+				button.disabled = true;
+	
+				// Send AJAX request
+				fetch(formElement.action, {
+					method: 'POST',
+					body: JSON.stringify({ productId }),
+					headers: {
+						'Content-Type': 'application/json'
+					}
+				})
+				.then(response => response.json())
+				.then(data => {
+					if (data.success) {
+						// Change icon on success
+						button.innerHTML = '<i class="bi bi-bookmark-heart-fill me-1"></i> Wishlisted';
+						button.classList.add('wishlist-added'); // Optional: Add a class for styling if needed
+						button.disabled = true; // Disable the button after adding to wishlist
+					} else {
+						alert(data.message || 'Could not add to wishlist.');
+						button.disabled = false;
+					}
+					isSubmitting = false;
+				})
+				.catch(error => {
+					console.error('Error:', error);
+					alert('An unexpected error occurred.');
+					button.disabled = false;
+					isSubmitting = false;
+				});
+			});
+		});
+	}
+	
+</script>
+
+	
+		
+
+	<!-- Footer -->
+	<footer class="bg3 p-t-75 p-b-32">
+		<div class="container">
+			<div class="row">
+				<div class="col-sm-6 col-lg-4 p-b-50">
+					<h4 class="stext-301 cl0 p-b-30">
+						Categories
+					</h4>
+					<ul>
+						<li class="p-b-10">
+							<a href="#" class="stext-107 cl7 hov-cl1 trans-04">
+								Fiction
+							</a>
+						</li>
+
+						<li class="p-b-10">
+							<a href="#" class="stext-107 cl7 hov-cl1 trans-04">
+								Non Fiction
+							</a>
+						</li>
+
+						<li class="p-b-10">
+							<a href="#" class="stext-107 cl7 hov-cl1 trans-04">
+								Kids
+							</a>
+						</li>
+
+						<li class="p-b-10">
+							<a href="#" class="stext-107 cl7 hov-cl1 trans-04">
+								Business
+							</a>
+						</li>
+					</ul>
+				</div>
+
+				<div class="col-sm-6 col-lg-4 p-b-50">
+					<h4 class="stext-301 cl0 p-b-30">
+						Help
+					</h4>
+
+					<ul>
+						<li class="p-b-10">
+							<a href="#" class="stext-107 cl7 hov-cl1 trans-04">
+								Track Order
+							</a>
+						</li>
+
+						<li class="p-b-10">
+							<a href="#" class="stext-107 cl7 hov-cl1 trans-04">
+								Returns 
+							</a>
+						</li>
+
+						<li class="p-b-10">
+							<a href="#" class="stext-107 cl7 hov-cl1 trans-04">
+								Shipping
+							</a>
+						</li>
+
+						<li class="p-b-10">
+							<a href="#" class="stext-107 cl7 hov-cl1 trans-04">
+								FAQs
+							</a>
+						</li>
+					</ul>
+				</div>
+
+				<div class="col-sm-6 col-lg-4 p-b-50">
+					<h4 class="stext-301 cl0 p-b-30">
+						GET IN TOUCH
+					</h4>
+
+					<p class="stext-107 cl7 size-201">
+						Any questions? Let us know in store at 8th floor, 379 Hudson St, New York, NY 10018 or call us on (+1) 96 716 6879
+					</p>
+
+					<div class="p-t-27">
+						<a href="#" class="fs-18 cl7 hov-cl1 trans-04 m-r-16">
+							<i class="fa fa-facebook"></i>
+						</a>
+
+						<a href="#" class="fs-18 cl7 hov-cl1 trans-04 m-r-16">
+							<i class="fa fa-instagram"></i>
+						</a>
+
+						<a href="#" class="fs-18 cl7 hov-cl1 trans-04 m-r-16">
+							<i class="fa fa-pinterest-p"></i>
+						</a>
+					</div>
+				</div>	
+			</div>
+
+
+		</div>
+	</footer>
+
+
+	<!-- Back to top -->
+	<div class="btn-back-to-top" id="myBtn">
+		<span class="symbol-btn-back-to-top">
+			<i class="zmdi zmdi-chevron-up"></i>
+		</span>
+	</div>
+
+	<!-- Modal1 -->
+	
+	<script>
+		document.getElementById('sort').addEventListener('change', function() {
+    const selectedSort = this.value;
+    fetch(`/products?sort=${selectedSort}`)
+        .then(response => response.text())
+        .then(html => {
+            document.querySelector('.isotope-grid').innerHTML = new DOMParser().parseFromString(html, 'text/html').querySelector('.isotope-grid').innerHTML;
+        })
+        .catch(error => console.error('Error fetching sorted products:', error));
+});
+
+document.getElementById('filter-form').addEventListener('submit', function(event) {
+    event.preventDefault(); // Prevent form from refreshing the page
+    const sort = document.getElementById('sort').value;
+    const category = document.getElementById('category').value;
+
+    // Redirect with query parameters for sorting and category filtering
+    window.location.href = `/products?sort=${sort}&category=${category}`;
+});
+	</script>
+
+<!--===============================================================================================-->	
+	<script src="vendor/jquery/jquery-3.2.1.min.js"></script>
+<!--===============================================================================================-->
+	<script src="vendor/animsition/js/animsition.min.js"></script>
+<!--===============================================================================================-->
+	<script src="vendor/bootstrap/js/popper.js"></script>
+	<script src="vendor/bootstrap/js/bootstrap.min.js"></script>
+<!--===============================================================================================-->
+	<script src="vendor/select2/select2.min.js"></script>
+	<script>
+		$(".js-select2").each(function(){
+			$(this).select2({
+				minimumResultsForSearch: 20,
+				dropdownParent: $(this).next('.dropDownSelect2')
+			});
+		})
+	</script>
+<!--===============================================================================================-->
+	<script src="vendor/daterangepicker/moment.min.js"></script>
+	<script src="vendor/daterangepicker/daterangepicker.js"></script>
+<!--===============================================================================================-->
+	<script src="vendor/slick/slick.min.js"></script>
+	<script src="js/slick-custom.js"></script>
+<!--===============================================================================================-->
+	<script src="vendor/parallax100/parallax100.js"></script>
+	<script>
+        $('.parallax100').parallax100();
+	</script>
+<!--===============================================================================================-->
+	<script src="vendor/MagnificPopup/jquery.magnific-popup.min.js"></script>
+	<script>
+		$('.gallery-lb').each(function() { // the containers for all your galleries
+			$(this).magnificPopup({
+		        delegate: 'a', // the selector for gallery item
+		        type: 'image',
+		        gallery: {
+		        	enabled:true
+		        },
+		        mainClass: 'mfp-fade'
+		    });
+		});
+	</script>
+<!--===============================================================================================-->
+	<script src="vendor/isotope/isotope.pkgd.min.js"></script>
+<!--===============================================================================================-->
+	<script src="vendor/sweetalert/sweetalert.min.js"></script>
+	<script>
+		$('.js-addwish-b2, .js-addwish-detail').on('click', function(e){
+			e.preventDefault();
+		});
+
+		$('.js-addwish-b2').each(function(){
+			var nameProduct = $(this).parent().parent().find('.js-name-b2').html();
+			$(this).on('click', function(){
+				swal(nameProduct, "is added to wishlist !", "success");
+
+				$(this).addClass('js-addedwish-b2');
+				$(this).off('click');
+			});
+		});
+
+		$('.js-addwish-detail').each(function(){
+			var nameProduct = $(this).parent().parent().parent().find('.js-name-detail').html();
+
+			$(this).on('click', function(){
+				swal(nameProduct, "is added to wishlist !", "success");
+
+				$(this).addClass('js-addedwish-detail');
+				$(this).off('click');
+			});
+		});
+
+		/*---------------------------------------------*/
+
+		$('.js-addcart-detail').each(function(){
+			var nameProduct = $(this).parent().parent().parent().parent().find('.js-name-detail').html();
+			$(this).on('click', function(){
+				swal(nameProduct, "is added to cart !", "success");
+			});
+		});
+	
+	</script>
+<!--===============================================================================================-->
+	<script src="vendor/perfect-scrollbar/perfect-scrollbar.min.js"></script>
+	<script>
+		$('.js-pscroll').each(function(){
+			$(this).css('position','relative');
+			$(this).css('overflow','hidden');
+			var ps = new PerfectScrollbar(this, {
+				wheelSpeed: 1,
+				scrollingThreshold: 1000,
+				wheelPropagation: false,
+			});
+
+			$(window).on('resize', function(){
+				ps.update();
+			})
+		});
+	</script>
+<!--===============================================================================================-->
+	<script src="js/main.js"></script>
+
+</body>
+</html>
