@@ -81,7 +81,7 @@ router.post('/ordersCancel/:orderId', userAuth.checkSession, orderController.can
 router.post('/ordersReturn/:orderId', userAuth.checkSession, orderController.returnOrder);
 
 router.get('/orders/:orderId/invoice',userAuth.checkSession,orderController.getInvoice)
-//router.post('/orders/return/:orderId/:productId', userAuth.checkSession, orderController.returnOrder);
+
 
 // Google Authentication
 router.get('/auth/google', passport.authenticate('google', { scope: ['profile', 'email'] }));
