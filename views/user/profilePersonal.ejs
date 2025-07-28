@@ -5,7 +5,7 @@
 
 <link rel="stylesheet" href="/css/profile.css" />
 
-<body>
+
     <section class="my-5">
         <div class="container">
             <div class="main-body">
@@ -27,7 +27,7 @@
                                     <a href="#" class="list-group-item list-group-item-action border-0 " onclick="showProfileDetails()">
                                         Profile Informaton
                                     </a>
-                                    <a href="#" class="list-group-item list-group-item-action border-0" onclick="showOrderDetails()">Orders</a>
+                                    <a href="#" class="list-group-item list-group-item-action border-0" onclick="showOrderDetails()" >Orders</a>
                                     
                                     <a href="#" class="list-group-item list-group-item-action border-0 active"
                                         onclick="showAddressBook()">
@@ -62,10 +62,16 @@
                                                 </span>
                                             </div>
                                             <div class="card-body">
-                                                <p><strong>Payment Status:</strong> <%= order.paymentStatus %></p>
+                                                <p><strong>Payment Status:</strong> 
+                                                <span style="color: rgb(224, 85, 10); font-weight: bold;"><%= order.paymentStatus %></span>
+                                                </p>
+                                                <p><strong>Return Status:</strong> 
+                                                <span style="color: rgb(255, 0, 140); font-weight: bold;"><%= order.returnStatus %></span>
+                                                </p>
                                                 <p><strong>Delivery Charge:</strong><%= order.shipping %> </p>
                                                 <p><strong>Discount:</strong><%=order.discount%> </p>
                                                 <p><strong>Total Amount:</strong> ₹<%= order.total.toFixed(2) %></p>
+                                                
                     
                                                 <h6 class="mt-3">Products:</h6>
                                                 <div class="table-responsive">
@@ -246,7 +252,8 @@
                                  name="name" 
                                  class="form-control" 
                                  value="<%= user.name %>" 
-                                 required>
+                                 >
+                                 <small id="namevalidate" class="text-danger"></small>
                          </div>
                          <div class="form-group">
                              <label for="email">Email</label>
@@ -255,8 +262,9 @@
                                  id="email" 
                                  name="email" 
                                  class="form-control" 
-                                 value="<%= user.email %>" 
-                                 required>
+                                 value="<%= user.email %>" >
+                                 <small id="emailCheck" class="text-danger"></small>
+                                 
                          </div>
                          <div class="form-group">
                              <label for="password">New Password</label>
@@ -275,6 +283,8 @@
                                  name="confirmPassword" 
                                  class="form-control" 
                                  placeholder="Leave blank to keep the same">
+                                <small id="confirmPass" class="text-success"></small>
+                                <small id="changeSuccess" class="text-primary"></small>
                          </div>
                          <br>
                          <button type="submit" class="btn btn-success btn-sm">Save Changes</button>
@@ -400,42 +410,46 @@
                            
                     
     <div id="addAddressModal" class="modal">
-    <div class="modal-content">
+    <div class="modal-content custom-modal">
         <span class="close" onclick="closeAddAddressModal()">&times;</span>
         <h2>Add Address</h2>
+        <div class="modal-scroll-area">
         <form id="addAddressForm"  method="post" action="/addAddress">
             
             <div class="col-12 d-flex main_flex_div">
             <div class="col-4 d-flex flex-column inner_flex_div">
                 <label for="name">Name:</label>
-            <input type="text" id="name" name="name" required><br>
+            <input type="text" id="name" name="name" >
+            <small id="nameError" class="text-danger"></small>
             </div>
             <div class="col-4 d-flex flex-column inner_flex_div">
                 <label for="mobile">Mobile No.:</label>
-            <input type="tel" id="mobile" name="phone" required pattern="[0-9]{10}">
+            <input type="tel" id="mobile" name="phone"  pattern="[0-9]{10}">
+            <small id="mobileError" class="text-danger"></small>
             </div>
             <div class="col-4 d-flex flex-column inner_flex_div">
                  <label for="pincode">Pin code:</label>
-            <input type="text" id="pincode" name="pincode" required><br>
-
+            <input type="text" id="pincode" name="pincode" >
+            <small id="pinError" class="text-danger"></small>
             </div>
             </div>
              <div class="col-12 d-flex main_flex_div">
             
             <div class="col-4 d-flex flex-column inner_flex_div">
                 <label for="locality">Locality:</label>
-            <input type="text" id="locality" name="locality" required><br>
+            <input type="text" id="locality" name="locality" >
+            <small id="localityError" class="text-danger"></small>
             </div>
 
             <div class="col-4 d-flex flex-column inner_flex_div">
                <label for="city">City/District/Town:</label>
-            <input type="text" id="city" name="city" required><br>
-
+            <input type="text" id="city" name="city" >
+             <small id="cityError" class="text-danger"></small>
             </div>
             <div class="col-4 d-flex flex-column inner_flex_div">
                 <label for="state">State</label>
-             <input type="text" id="state" name="state" required><br>
- 
+             <input type="text" id="state" name="state" >
+             <small id="stateError" class="text-danger"></small>
              </div>
              
          
@@ -445,7 +459,8 @@
              <div class="col-12 d-flex main_flex_div">
             <div class="col-12 d-flex flex-column inner_flex_div">
                 <label for="address">Address:</label>
-             <textarea id="address" name="address" required></textarea><br>
+             <textarea id="address" name="address" ></textarea><br>
+             <small id="addressError" class="text-danger"></small>
             </div>
            
             </div>
@@ -479,6 +494,7 @@
             
             
         </form>
+        </div>
     </div>
 </div>
 
@@ -498,8 +514,31 @@
     <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js"
         integrity="sha384-JZR6Spejh4U02d8jOt6vLEHfe/JQGiRRSQQxSfFWpi1MquVdAyjUar5+76PVCmYl"
         crossorigin="anonymous"></script>
-
 <script>
+    document.getElementById('editProfileForm').addEventListener('submit',function(event){
+        
+        const name=document.getElementById('name').value.trim()
+        const password=document.getElementById('password').value.trim()
+        const confirmPassword=document.getElementById('confirmPassword').value.trim()
+        let error=false;
+
+    if (name.length < 4) {
+      document.getElementById("namevalidate").textContent = "Name must be at least 3 characters.";
+        error = true;
+        event.preventDefault();  
+    } else {
+     document.getElementById("nameFeedback").textContent = "";
+    }
+    
+    
+    
+   
+
+       
+    })
+</script>
+<script>
+
     function toggleEditAddress(index) {
         const form = document.getElementById(`edit-address-form-${index}`);
         // Toggle display property between none and block
@@ -637,7 +676,7 @@ function submitReturnOrder(orderId) {
     }).then((result) => {
         if (result.isConfirmed) {
             // Proceed with return order
-            fetch(`/user/ordersReturn/${orderId}`, {
+            fetch(`/ordersReturn/${orderId}`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -682,6 +721,53 @@ function submitReturnOrder(orderId) {
 
     //end returns
     
+  document.getElementById('addAddressForm').addEventListener('submit' ,function(event){
+    event.preventDefault()
+      const name=document.getElementById('name')
+      const mobile=document.getElementById('mobile')
+      const pincode= document.getElementById('pincode')
+      const locality=document.getElementById('locality')
+      const city= document.getElementById('city')
+      const state= document.getElementById('state')
+      const address=document.getElementById('address')
+    
+      let valid=true
+      if (name.value.trim() === '') {
+        document.getElementById('nameError').textContent = 'Name is required';
+        valid = false;
+        event.preventDefault()
+      }
+      if (mobile.value.trim() === '') {
+        document.getElementById('mobileError').textContent = 'Contact Number is required';
+        valid = false;
+        event.preventDefault()
+      }
+      if (pincode.value.trim() === '') {
+        document.getElementById('pinError').textContent = 'Pincode is required';
+        valid = false;
+        event.preventDefault()
+      }
+      if (locality.value.trim() === '') {
+        document.getElementById('localityError').textContent = 'place is required';
+        valid = false;
+        event.preventDefault()
+      }
+      if (city.value.trim() === '') {
+        document.getElementById('cityError').textContent = 'City is required';
+        valid = false;
+        event.preventDefault()
+      }
+    if (state.value.trim() === '') {
+        document.getElementById('stateError').textContent = 'State is required';
+        valid = false;
+        event.preventDefault()
+      }
+      if (address.value.trim() === '') {
+        document.getElementById('addressError').textContent = 'Your address is Mandatory';
+        valid = false;
+        event.preventDefault()
+      }
+  })  
     
     function showAddAddressModal() {
     const modal = document.getElementById('addAddressModal');
@@ -801,7 +887,7 @@ function copyReferralCode() {
 </script>
   
         
-</body>
+</section>
 
     
     <%- include("partials/profileFooter.ejs") %>

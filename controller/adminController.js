@@ -453,8 +453,7 @@ const getOrders = async (req, res) => {
             .sort({createdAt:-1})
         const totalPages = Math.ceil(totalOrders / limit); // Calculate total pages
 
-        // Log fetched orders for debugging
-        console.log('Fetched Orders:', orders);
+       
 
         // Render the EJS view and pass the orders data, current page, and total pages
         res.render('admin/orders', { orders, currentPage: page, totalPages }); // Make sure 'admin/orders' matches your EJS view file
@@ -464,37 +463,54 @@ const getOrders = async (req, res) => {
     }
 };
 
-// Controller to update order status
-const updateOrderStatus = async (req, res) => {
-    const { orderId } = req.params;
+// Update order status
+const orderStatus = async (req, res) => {
+    console.log("working orderstatus")
+  try {
+    const { id } = req.params;
     const { status } = req.body;
     
-    try {
-        const order = await Order.findById(orderId);
-        if (!order) return res.status(404).send('Order not found');
-
-        const previousStatus = order.status; // Store the previous status for comparison
-
-        // Update the order status
-        order.status = status;
-
-        // Handle status changes
-        if (status === 'cancelled') {
-            order.cancelledAt = new Date();
-        }
-        
-        if (status === 'delivered') {
-            order.deliveredAt = new Date(); // Set the delivered date to now
-        }
-
-        await order.save();
-
-        // Redirect with success message
-        res.redirect(`/admin/orders?message=Order+status+updated+successfully`);
-    } catch (error) {
-        console.error('Error updating order status:', error);
-        res.status(500).redirect(`/admin/orders?error=Error+updating+order+status`);
+    // Validate the input status
+    const validStatuses = [
+      "pending",
+      "shipped",
+      "delivered",
+      "cancelled",
+      "returned",
+    ];
+    
+    if (!validStatuses.includes(status)) {
+      return res.status(400).send("Invalid status provided");
     }
+    
+    // Update the order in the database
+    const updatedOrder = await Order.findById(id);
+
+    if (!updatedOrder) {
+      return res.status(404).send("Order not found");
+    }
+    
+    //  all products have a valid name
+    updatedOrder.items.forEach((product) => {
+      if (!product.name) {
+        product.name = product.productId
+          ? product.productId.name
+          : "Unknown Product";
+      }
+    });
+    
+    if (status === "delivered") {
+      updatedOrder.paymentStatus = "paid";
+    }
+
+    updatedOrder.status = status;
+    await updatedOrder.save();
+
+    res.redirect("/admin/orders");
+  } catch (error) {
+    console.error("Error updating order status:", error);
+    res.status(500).send("Internal Server Error");
+  }
 };
 const getDeliveredSalesReport = async (req, res) => {
     try {
@@ -805,6 +821,81 @@ const rejectReturnRequest = async (req, res) => {
         res.status(500).send('Server error');
     }
 };
+const acceptReturn = async (req, res) => {
+  try {
+    const { orderId } = req.params;
+
+    // Validate orderId
+    if (!mongoose.Types.ObjectId.isValid(orderId)) {
+      return res.status(400).json({ success: false, message: "Invalid order ID" });
+    }
+
+    // Find the order
+    const order = await Order.findById(orderId);
+    if (!order) {
+      return res.status(404).json({ success: false, message: "Order not found" });
+    }
+
+    // Validate order status
+    if (order.status !== "returnRequested") {
+      return res.status(400).json({ success: false, message: "Return request is not valid" });
+    }
+
+    // Update the order status
+    order.status = "returned";
+    order.returnStatus = "accepted";
+    order.updatedAt = new Date();
+    await order.save();
+
+    // Refund the stock
+    for (const item of order.items) {
+      const product = await Book.findById(item.productId);
+      if (!product) {
+        throw new Error(`Product with ID ${item.productId} not found`);
+      }
+      product.stock += item.quantity;
+      await product.save();
+    }
+
+    
+
+    res.json({ success: true, message: "Return request accepted successfully" });
+  } catch (error) {
+    console.error("Error accepting return request:", error);
+    res.status(500).json({ success: false, message: "Server error" });
+  }
+};
+
+
+//reject return
+const rejectReturn = async (req, res) => {
+  try {
+    const { orderId } = req.params;
+
+    // Find the order
+    const order = await Order.findById(orderId);
+    if (!order) {
+      return res.status(404).json({ success: false, message: "Order not found" });
+    }
+
+    // Validate order status
+    if (order.status !== "returnRequested") {
+      return res.status(400).json({ success: false, message: "Return request is not valid" });
+    }
+
+    // Update the order status
+    order.status = "delivered";
+    order.returnStatus = "rejected";
+    order.updatedAt = new Date();
+    await order.save();
+
+    res.json({ success: true, message: "Return request rejected successfully" });
+  } catch (error) {
+    console.error("Error rejecting return request:", error);
+    res.status(500).json({ success: false, message: "Server error" });
+  }
+};
+
 module.exports = {
     adminUsers,
     blockUser,
@@ -817,14 +908,14 @@ module.exports = {
     login,
     postLogin,
     getOrders,
-    updateOrderStatus,
+    orderStatus,
     getDashboardData,
     renderDashboard,
     getDeliveredSalesReport,
     downloadSalesReport,
     filterSalesReport,
-    approveReturnRequest,
-    rejectReturnRequest,
+    acceptReturn,
+    rejectReturn,
 };
 
 

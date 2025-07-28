@@ -125,7 +125,7 @@ const PDFDocument = require('pdfkit');
 
 //render checkout
 const renderCheckout = async (req, res) => {
-  console.log("rendercheckot working")
+ 
   try {
     const userId = req.session.user.id;
 
@@ -161,7 +161,7 @@ const renderCheckout = async (req, res) => {
 
     const userAddresses = await Address.findOne({ userId });
     const addresses = userAddresses ? userAddresses.addresses : [];
-    console.log(items);
+    console.log('from render',items);
     res.render("user/checkout", {
       items,
       cartTotal,
@@ -176,7 +176,7 @@ const renderCheckout = async (req, res) => {
 
 //add new address
 const addNewAddress = async (req, res) => {
-  console.log(1)
+  
   try {
     const {
       name,
@@ -190,22 +190,22 @@ const addNewAddress = async (req, res) => {
       alternatePhone,
     } = req.body;
     const userId = req.session.user?.id;
-console.log(2)
+
     if (!userId) {
       return res
         .status(401)
         .json({ success: false, message: "Unauthorized user." });
     }
-console.log(3)
+
     let userAddress = await Address.findOne({ userId });
-console.log(4)
+
     if (!userAddress) {
       userAddress = new Address({
         userId,
         addresses: [],
       });
     }
-console.log(5)
+
     const newAddress = {
       name,
       phone,
@@ -217,20 +217,20 @@ console.log(5)
       landmark,
       alternatePhone,
     };
-console.log(6)
+
     userAddress.addresses.push(newAddress);
     await userAddress.save();
-    console.log(7)
-console.log("Received address body:", req.body);
+    
+
     console.log("User address after saving:", userAddress);
     res.status(201).json({
       success: true,
       address: userAddress.addresses[userAddress.addresses.length - 1],
     });
-    console.log(8)
+   
   } catch (error) {
     console.error("Error adding address:", error);
-    res.status(500).json({ success: false, message: "Internal server error." });
+    res.status(500).json({ success: false, message: "Validation error." });
   }
 };
 const placeCODOrder = async (req, res) => {
@@ -555,11 +555,11 @@ const generateInvoicePDF = async (
   
     doc.fontSize(10)
       .font("Helvetica")
-      .text("Thank you for shopping with MILU BOOKS!", leftMargin, footerY + 15, {
+      .text("Thank you for shopping with SAF BOOKS!", leftMargin, footerY + 15, {
         width: contentWidth,
         align: "center",
       })
-      .text("Contact us at support@milubooks.com", leftMargin, footerY + 30, {
+      .text("Contact us at saf@safbooks.com", leftMargin, footerY + 30, {
         width: contentWidth,
         align: "center",
       });

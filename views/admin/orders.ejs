@@ -43,8 +43,10 @@
                                                 <th>Customer Name</th>
                                                 <th>Product</th>
                                                 <th>Quantity</th>
+
                                                 <th>Payment </th>
                                                 <th>Status</th>
+                                                <th>Action</th>
                                                 <th>View</th>
 
                                             </tr>
@@ -59,30 +61,23 @@
                                                         <td><%= order.items[0].productId.title %></td>
                                                         <td><%= order.items[0].quantity %></td>
                                                         <td><%= order.paymentMethod %></td>
-                                                        <td><%= order.paymentStatus %></td>
+                                                        
                                                         <td>
                                                             <div class="badge <%= order.status === 'pending' ? 'badge-warning' : order.status === 'shipped' ? 'badge-info' : order.status === 'delivered' ? 'badge-success' : order.status === 'paid' ? 'badge-success' : order.status === 'requested' ? 'badge-primary' : order.status === 'returned' ? 'badge-danger' : 'badge-danger' %>">
                                                                 <%= order.status %>
                                                             </div>
                                                         </td>
                                                         <td>
-                                                            <% order.items.forEach((item) => { %>
-                                                                <% if (item.returnStatus === 'requested') { %>
+                                                           
+                                                                <% if (order.returnStatus === 'requested') { %>
                                                                     <!-- Approve and Reject buttons for each return request -->
-                                                                    <form action="/admin/orders/<%= order._id %>/return/approve" method="POST" class="inline">
-                                                                        <input type="hidden" name="itemId" value="<%= item._id %>" />
-                                                                        <button type="submit" class="text-green-600 hover:text-green-800">Approve</button>
-                                                                    </form>
-                                                                    <form action="/admin/orders/<%= order._id %>/return/reject" method="POST" class="inline">
-                                                                        <input type="hidden" name="itemId" value="<%= item._id %>" />
-                                                                        <button type="submit" class="text-red-600 hover:text-red-800">Reject</button>
-                                                                    </form>
-                                                                    <p>Product: <%= item.titleAtOrder %></p>
-                                                                    <p>Reason: <%= item.returnReason %></p>
+                                                                    <button class="btn btn-primary" type="button" onclick="confirmReturn('<%= order._id %>')">Accept</button>
+                                                                    <button class="btn btn-danger" type="button" onclick="rejectReturn('<%= order._id %>')">Reject</button>
+                                                                    
                                                                 <% } %>
-                                                            <% }) %>
+                                                            
                                                         
-                                                            <% if (!order.items.some(item => item.returnStatus === 'requested')) { %>
+                                                            <% if (order.status !=='cancelled'&& order.status !=='returned' && order.status !=='returnRequested') { %>
                                                                 <!-- Show order status form if no item has a return request -->
                                                                 <form action="/admin/orders/<%= order._id %>/status" method="POST" class="order-status-form">
                                                                     <input type="hidden" name="_method" value="PUT">
@@ -125,9 +120,10 @@
                                                                                     <h5>Customer Information</h5>
                                                                                 </div>
                                                                                 <div class="card-body">
-                                                                                    <p><strong>Customer Name:</strong> <%= order.userId.name %></p>
-                                                                                    <p><strong>Order Date:</strong> <%= order.createdAt.toLocaleDateString() %></p>
-                                                                                    <p><strong>Status:</strong> 
+                                                                                    <p><strong>Name:</strong> <%= order.userId.name %></p>
+                                                                                    <p><strong>Email:</strong> <%= order.userId.email %></p>
+                                                                                    <p><strong>Ordered Date:</strong> <%= order.createdAt.toLocaleDateString() %></p>
+                                                                                    <p><strong>Delivery Status:</strong> 
                                                                                         <span class="badge badge-warning" style="font-size: 1.1em;"><%= order.status %></span>
                                                                                     </p>
                                                                                     <p><strong>Total Amount:</strong> ₹<%= order.total.toFixed(2) %></p>
@@ -152,7 +148,7 @@
                                                                         </div>
                                                     
                                                                         <div class="col-md-4">
-                                                                            <div class="card text-dark bg-warning mb-3">
+                                                                            <div class="card text-dark bg-primary mb-3">
                                                                                 <div class="card-header">
                                                                                     <h5>Items</h5>
                                                                                 </div>
@@ -262,5 +258,68 @@
             });
         }
     </script>
+    <script>
+    function confirmReturn(orderId) {
+      Swal.fire({
+        title: 'Are you sure?',
+        text: "You want to accept this return request?",
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonColor: '#3085d6',
+        cancelButtonColor: '#d33',
+        confirmButtonText: 'Yes, accept!'
+      }).then((result) => {
+        if (result.isConfirmed) {
+          fetch(`/admin/acceptReturn/${orderId}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' }
+          })
+            .then((response) => response.json())
+            .then((data) => {
+              if (data.success) {
+                Swal.fire('Accepted!', data.message, 'success').then(() => location.reload());
+              } else {
+                Swal.fire('Error!', data.message, 'error');
+              }
+            })
+            .catch((error) => {
+              Swal.fire('Error!', 'Something went wrong!', 'error');
+              console.error('Error:', error);
+            });
+        }
+      });
+    }
+  
+    function rejectReturn(orderId) {
+      Swal.fire({
+        title: 'Are you sure?',
+        text: "You want to reject this return request?",
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#d33',
+        cancelButtonColor: '#3085d6',
+        confirmButtonText: 'Yes, reject!'
+      }).then((result) => {
+        if (result.isConfirmed) {
+          fetch(`/admin/rejectReturn/${orderId}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' }
+          })
+            .then((response) => response.json())
+            .then((data) => {
+              if (data.success) {
+                Swal.fire('Rejected!', data.message, 'success').then(() => location.reload());
+              } else {
+                Swal.fire('Error!', data.message, 'error');
+              }
+            })
+            .catch((error) => {
+              Swal.fire('Error!', 'Something went wrong!', 'error');
+              console.error('Error:', error);
+            });
+        }
+      });
+    }
+  </script>
 </body>
 </html>

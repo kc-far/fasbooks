@@ -429,7 +429,7 @@ p {
         try {
             console.log("Submitting form...");
 
-            const response = await fetch(`/cart/addProducts/${productId}`, {
+            const response = await fetch(`/cart/add/${productId}`, {
                 method: 'POST',
             });
 

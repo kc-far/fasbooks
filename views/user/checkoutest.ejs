@@ -10,41 +10,42 @@
 <div class="modal fade" id="addAddressModal" tabindex="-1" role="dialog" aria-labelledby="addAddressModalLabel" aria-hidden="true">
     <div class="modal-dialog" role="document">
         <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="addAddressModalLabel">Add New Address</h5>
-                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                    <span aria-hidden="true">&times;</span>
-                </button>
-            </div>
+            
             <div class="modal-body">
                 <form id="newAddressForm">
+                    
+                        <h5 class="modal-title" id="addAddressModalLabel">Add New Address</h5>
+                        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                           <span aria-hidden="true">&times;</span>
+                        </button>
+                    
                     <div class="form-group">
                         <label for="newName">Full Name</label>
-                        <input type="text" class="form-control" id="newName"  required>
+                        <input type="text" class="form-control" id="newName"  >
                     </div>
                     <div class="form-group">
                         <label for="newAddress">Address</label>
-                        <input type="text" class="form-control" id="newAddress"required>
+                        <input type="text" class="form-control" id="newAddress">
                     </div>
                     <div class="form-group">
                         <label for="newLocality">locality</label>
-                        <input type="text" class="form-control" id="newLocality"required>
+                        <input type="text" class="form-control" id="newLocality">
                     </div>
                     <div class="form-group">
                         <label for="newCity">City</label>
-                        <input type="text" class="form-control" id="newCity"  required>
+                        <input type="text" class="form-control" id="newCity"  >
                     </div>
                     <div class="form-group">
                         <label for="newState">State</label>
-                        <input type="text" class="form-control" id="newState"  required>
+                        <input type="text" class="form-control" id="newState"  >
                     </div>
                     <div class="form-group">
                         <label for="newPhone">Mobile</label>
-                        <input type="text" class="form-control" id="newPhone" required>
+                        <input type="text" class="form-control" id="newPhone" >
                     </div>
                     <div class="form-group">
                         <label for="newPincode">Postal Code</label>
-                        <input type="text" class="form-control" id="newPincode" required>
+                        <input type="text" class="form-control" id="newPincode" >
                     </div>
                     <div class="form-group">
                         <label for="newAlternatePhone">alternate Number</label>
@@ -54,12 +55,13 @@
                         <label for="newLandmark">Landmark</label>
                         <input type="text" class="form-control" id="newLandmark" >
                     </div>
+                    <div class="modal-footer">
+                       <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+                      <button type="button" class="btn btn-primary" onclick="saveNewAddress()">Save Address</button>
+                   </div>
                 </form>
             </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
-                <button type="button" class="btn btn-primary" onclick="saveNewAddress()">Save Address</button>
-            </div>
+            
         </div>
     </div>
 </div>
@@ -147,14 +149,14 @@
             Add New Address
         </button>
         <!-- Hidden Inputs for Address Details -->
-        <input type="hidden" id="selectedAddress" name="addressId" required>
-        <input type="hidden" id="name" name="name" required>
-        <input type="hidden" id="address" name="address" required>
-        <input type="hidden" id="locality" name="locality" required>
-        <input type="hidden" id="city" name="city" required>
-        <input type="hidden" id="state" name="state" required>
-        <input type="hidden" id="phone" name="phone" required>
-        <input type="hidden" id="pincode" name="pincode" required>
+        <input type="hidden" id="selectedAddress" name="addressId" >
+        <input type="hidden" id="name" name="name" >
+        <input type="hidden" id="address" name="address" >
+        <input type="hidden" id="locality" name="locality" >
+        <input type="hidden" id="city" name="city" >
+        <input type="hidden" id="state" name="state" >
+        <input type="hidden" id="phone" name="phone" >
+        <input type="hidden" id="pincode" name="pincode" >
         <input type="hidden" id="alternatePhone" name="alternatePhone">
         <input type="hidden" id="landmark" name="landmark">
 
@@ -214,6 +216,7 @@
     // Function to handle saving the new address and adding it to the form
        
     async function saveNewAddress() {
+        
         const name = document.getElementById('newName').value;
         const address = document.getElementById('newAddress').value;
         const locality = document.getElementById('newLocality').value;
@@ -223,11 +226,11 @@
         const phone = document.getElementById('newPhone').value;
         const alternatePhone = document.getElementById('newAlternatePhone').value;
         const landmark = document.getElementById('newLandmark').value; 
-
+       
     const userId = '<%= userId %>';  // Assume user ID is available on the server-side.
 
     try {
-        const response = await fetch('/user/addNewAddress', {
+        const response = await fetch('/addNewAddress', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',

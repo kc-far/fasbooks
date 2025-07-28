@@ -446,9 +446,7 @@ const getProfile = async (req, res) => {
     const orders = await Order.find({ userId: user._id })
       .populate("items.productId", "title images")
       .sort({ createdAt: -1 });
-        
-        console.log('User ID:', user._id);
-     console.log("items are:",orders.items);
+     
 
     // Pass user and addresses to the EJS template
     res.render("user/profilePersonal", {
@@ -469,6 +467,7 @@ const getOrders = async (req, res) => {
         const userId = req.session.user.id;
         const page = parseInt(req.query.page) || 1; // Current page number from query parameter
         const limit = 5; // Number of orders per page
+        const user = await User.findOne({ email });
 
         // Query to get total number of orders
         const totalOrders = await Order.countDocuments({ userId });
@@ -482,10 +481,10 @@ const getOrders = async (req, res) => {
             .populate('items.productId');
 
         // Pass pagination data to the view
-        const currentUrl = req.url.split('?')[0]; // Base URL without query parameters
+        //const currentUrl = req.url.split('?')[0]; // Base URL without query parameters
         res.render('user/profileOrders', {
             orders,
-            currentUrl,
+            //currentUrl,
             currentPage: page,
             totalPages,
         });
@@ -494,19 +493,16 @@ const getOrders = async (req, res) => {
         res.status(500).send('Server error');
     }
 };
-//edit profile
 const editProfile = async (req, res) => {
-   
   try {
     const { name, email, password, confirmPassword } = req.body;
     const userId = req.session.user?.id;
-     
+
     if (!userId) {
-      return res
+      return res 
         .status(401)
         .render("user/profilePersonal", { message: "Unauthorized" });
     }
-   
 
     // Validate password confirmation if provided
     if (password && password !== confirmPassword) {
@@ -514,7 +510,6 @@ const editProfile = async (req, res) => {
         .status(400)
         .render("user/profilePersonal", { message: "Passwords do not match" });
     }
-    
 
     // Create an object to store updated fields
     const updateFields = { name, email };
@@ -524,7 +519,6 @@ const editProfile = async (req, res) => {
       const hashedPassword = await bcrypt.hash(password, 10);
       updateFields.password = hashedPassword;
     }
-  
 
     // Update the user's details in the database
     const updatedUser = await User.findByIdAndUpdate(
@@ -532,22 +526,97 @@ const editProfile = async (req, res) => {
       updateFields,
       { new: true }
     );
-   
 
     if (!updatedUser) {
       return res.status(404).send("User not found or unauthorized");
     }
-     
-    // Redirect to the profilePersonal page with a success message
+
+    // Redirect to the profile page with a success message
     res.redirect("/profilePersonal?success=true");
-  
   } catch (error) {
     console.error("Error updating profile:", error);
-
     res.redirect("/profilePersonal?error=true");
-   
   }
 };
+
+// //edit profile
+// const editProfile = async (req, res) => {
+   
+//   try {
+//     const { name, email, password, confirmPassword } = req.body;
+//     const userId = req.session.user?.id;
+     
+//     if (!userId) {
+//       return res
+//         .status(401)
+//         .render("user/profilePersonal", { message: "Unauthorized" });
+//     }
+   
+//     const emailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+//     if (!emailValid.test(email)) {
+//       return res.status(400).render("user/profilePersonal", {
+//         message: "Please enter a valid email.",
+//       });
+//     }
+//     const user = await User.findById(userId);
+//     if (user.email !== email) {
+//       const userExist = await User.findOne({ email });
+//       if (userExist) {
+//         return res.status(400).render("user/profilePersonal", {
+//           message: "Email is already registered.",
+//         });
+//       }
+//     }
+
+
+//     // Validate password confirmation if provided
+//     if (password && password !== confirmPassword) {
+//       return res
+//         .status(400)
+//         .render("user/profilePersonal", { message: "Passwords do not match" });
+//     }
+    
+
+//     // Create an object to store updated fields
+//     const updateFields = { name, email };
+
+//     // If a new password is provided, hash it and add to the update object
+//     if (password) {
+//       const hashedPassword = await bcrypt.hash(password, 10);
+//       updateFields.password = hashedPassword;
+//     }
+  
+//     const orders = await Order.find({ userId })
+//     // Update the user's details in the database
+//     const updatedUser = await User.findByIdAndUpdate(
+//       userId,
+//       updateFields,
+//       { new: true },
+      
+//     );
+   
+
+//     if (!updatedUser) {
+//       return res.status(404).send("User not  unauthorized");
+//     }
+     
+//     // Redirect to the profilePersonal page with a success message
+//     res.render("user/profilePersonal",{
+//        user :updatedUser,
+//        orders,
+//        message:'profile edited successfully'
+
+//     });
+  
+//   } catch (error) {
+//     console.error("Error updating profile:", error);
+
+//     res.status(500).render("user/profilePersonal", {
+//       message: "Something went wrong. Please try again.",
+//     });
+   
+//   }
+// };
 
 //add address
 const addAddress = async (req, res) => {

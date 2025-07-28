@@ -205,6 +205,19 @@ h4 {
   padding: 1.5rem;
   margin-top: 1rem;
 }
+.custom-modal {
+  max-height: 90vh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.modal-scroll-area {
+  overflow-y: auto;
+  padding-right: 10px;
+  flex-grow: 1;
+}
+
 
 /* Responsive */
 @media (max-width: 768px) {

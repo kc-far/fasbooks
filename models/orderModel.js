@@ -11,9 +11,6 @@ const orderSchema = new mongoose.Schema({
             cancelledAt: { type: Date }, // Optional: Timestamp when canceled
             titleAtOrder: { type: String, required: true }, // Snapshot of product title
             priceAtOrder: { type: Number, required: true },
-            returnReason: { type: String }, 
-            returnStatus: { type: String, enum: ['pending', 'approved', 'rejected', 'requested'], default: 'pending' }, // Return status
-            returnedAt: { type: Date },// Snapshot of product price
             isReturned:{ type: Boolean, default: false },
         }
     ],
@@ -30,10 +27,13 @@ const orderSchema = new mongoose.Schema({
     discount: { type: Number, default: 0 },  // New field for combined offer and coupon discounts
     shipping: { type: Number, required: true },
     total: { type: Number, required: true },
-    status: { type: String, enum: ['failed', 'shipped', 'delivered', 'cancelled', 'paid', 'returned', 'pending'], default: 'pending' },
+    status: { type: String, enum: [ 'shipped', 'delivered', 'cancelled', 'paid', 'returned', 'pending','returnRequested'], default: 'pending' },
     cancelledAt: { type: Date },
     deliveredAt: { type: Date },
-    paymentStatus: { type: String, enum: ['pending', 'paid', 'failed'], default: 'pending' }
+    paymentStatus: { type: String, enum: ['pending', 'paid', 'failed'], default: 'pending' },
+    returnReason: { type: String }, 
+    returnStatus: { type: String, enum: ['pending', 'accepted', 'rejected', 'requested'], default: 'pending' }, 
+    returnedAt: { type: Date },// Snapshot of product price
 }, { timestamps: true });
 
 orderSchema.pre('save', function (next) {
