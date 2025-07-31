@@ -71,7 +71,7 @@ router.post('/wishlist/remove/:id',userAuth.checkSession, userController.removeW
 router.get('/checkout', userAuth.checkSession, orderController.renderCheckout);
 router.post('/addNewAddress', userAuth.checkSession, orderController.addNewAddress);
 
-// // Payment
+ // Payment
  router.post('/checkoutCOD', userAuth.checkSession, orderController.placeCODOrder);
 
 //Order

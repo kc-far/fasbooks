@@ -49,7 +49,7 @@
                                     <% orders.forEach(order => { %>
                                         <div class="card shadow-sm mb-4">
                                             <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
-                                                <h5 class="mb-0">Order ID: <%= order._id %></h5>
+                                                <h5 class="mb-0">Order ID: <%= order.OrderId %></h5>
                                                 <span class="badge bg-<%= 
                                                     order.status === 'pending' ? 'warning' : 
                                                     order.status === 'delivered' ? 'success' : 
