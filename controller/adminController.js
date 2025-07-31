@@ -789,38 +789,25 @@ const approveReturnRequest = async (req, res) => {
 };
 
 
+const getReturnOrders=async (req,res)=>{
+       try{
+        const page = parseInt(req.query.page) || 1; 
+        const limit = 5; 
+        const skip = (page - 1) * limit;
 
-
-const rejectReturnRequest = async (req, res) => {
-    const { orderId } = req.params;
-    const { itemId } = req.body;  
-
-    try {
-        const order = await Order.findById(orderId).populate('items.productId');
-        if (!order) return res.status(404).send('Order not found');
-
-        const item = order.items.find(item => item._id.toString() === itemId);
-        if (!item) return res.status(404).send('Item not found');
-        if (item.returnStatus !== 'requested') return res.status(400).send('Return request is not pending for this item');
-
-        // Reset return status and reason
-        item.returnStatus = null;
-        item.returnReason = null;
-
-        // If the product was marked as damaged, revert stock change
-        if (item.returnReason === 'Damaged') {
-            await Book.findByIdAndUpdate(item.productId._id, { $inc: { stock: -item.quantity } });
-        }
-
-        // Save the updated order
-        await order.save();
-
-        res.redirect('/admin/orders'); // Redirect to admin orders page
-    } catch (error) {
-        console.error(error);
-        res.status(500).send('Server error');
-    }
-};
+        const returnOrders=await Order.find({returnStatus:'requested'})
+                           .populate('userId')
+                           .populate('items.productId')
+                           .limit(limit)
+                           .skip(skip)
+                           .sort({ returnedAt: -1 });
+        const totalPages = Math.ceil(returnOrders/limit)
+        return res.render('admin/returnOrders',{returnOrders, currentPage: page, totalPages})
+       }catch(err) {
+          console.log(err)
+          res.status(500).send('error occure while fetching return orders')
+       }
+}
 const acceptReturn = async (req, res) => {
   try {
     const { orderId } = req.params;
@@ -914,6 +901,7 @@ module.exports = {
     getDeliveredSalesReport,
     downloadSalesReport,
     filterSalesReport,
+    getReturnOrders,
     acceptReturn,
     rejectReturn,
 };

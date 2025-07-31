@@ -71,7 +71,7 @@ router.post('/wishlist/remove/:id',userAuth.checkSession, userController.removeW
 router.get('/checkout', userAuth.checkSession, orderController.renderCheckout);
 router.post('/addNewAddress', userAuth.checkSession, orderController.addNewAddress);
 
-// // Payment
+ // Payment
  router.post('/checkoutCOD', userAuth.checkSession, orderController.placeCODOrder);
 
 //Order
@@ -81,7 +81,7 @@ router.post('/ordersCancel/:orderId', userAuth.checkSession, orderController.can
 router.post('/ordersReturn/:orderId', userAuth.checkSession, orderController.returnOrder);
 
 router.get('/orders/:orderId/invoice',userAuth.checkSession,orderController.getInvoice)
-//router.post('/orders/return/:orderId/:productId', userAuth.checkSession, orderController.returnOrder);
+
 
 // Google Authentication
 router.get('/auth/google', passport.authenticate('google', { scope: ['profile', 'email'] }));
