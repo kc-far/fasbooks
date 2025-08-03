@@ -18,7 +18,7 @@
     <style>
     .card .card-body {
     padding: 1.75rem 1.5625rem;
-    color: #020101;
+    color: #ffffff;
     }
     </style>
 </head>
@@ -68,14 +68,6 @@
                                                             </div>
                                                         </td>
                                                         <td>
-                                                           
-                                                                <% if (order.returnStatus === 'requested') { %>
-                                                                    <!-- Approve and Reject buttons for each return request -->
-                                                                    <button class="btn btn-primary" type="button" onclick="confirmReturn('<%= order._id %>')">Accept</button>
-                                                                    <button class="btn btn-danger" type="button" onclick="rejectReturn('<%= order._id %>')">Reject</button>
-                                                                    
-                                                                <% } %>
-                                                            
                                                         
                                                             <% if (order.status !=='cancelled'&& order.status !=='returned' && order.status !=='returnRequested') { %>
                                                                 <!-- Show order status form if no item has a return request -->
@@ -258,68 +250,6 @@
             });
         }
     </script>
-    <script>
-    function confirmReturn(orderId) {
-      Swal.fire({
-        title: 'Are you sure?',
-        text: "You want to accept this return request?",
-        icon: 'question',
-        showCancelButton: true,
-        confirmButtonColor: '#3085d6',
-        cancelButtonColor: '#d33',
-        confirmButtonText: 'Yes, accept!'
-      }).then((result) => {
-        if (result.isConfirmed) {
-          fetch(`/admin/acceptReturn/${orderId}`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' }
-          })
-            .then((response) => response.json())
-            .then((data) => {
-              if (data.success) {
-                Swal.fire('Accepted!', data.message, 'success').then(() => location.reload());
-              } else {
-                Swal.fire('Error!', data.message, 'error');
-              }
-            })
-            .catch((error) => {
-              Swal.fire('Error!', 'Something went wrong!', 'error');
-              console.error('Error:', error);
-            });
-        }
-      });
-    }
-  
-    function rejectReturn(orderId) {
-      Swal.fire({
-        title: 'Are you sure?',
-        text: "You want to reject this return request?",
-        icon: 'warning',
-        showCancelButton: true,
-        confirmButtonColor: '#d33',
-        cancelButtonColor: '#3085d6',
-        confirmButtonText: 'Yes, reject!'
-      }).then((result) => {
-        if (result.isConfirmed) {
-          fetch(`/admin/rejectReturn/${orderId}`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' }
-          })
-            .then((response) => response.json())
-            .then((data) => {
-              if (data.success) {
-                Swal.fire('Rejected!', data.message, 'success').then(() => location.reload());
-              } else {
-                Swal.fire('Error!', data.message, 'error');
-              }
-            })
-            .catch((error) => {
-              Swal.fire('Error!', 'Something went wrong!', 'error');
-              console.error('Error:', error);
-            });
-        }
-      });
-    }
-  </script>
+    
 </body>
 </html>

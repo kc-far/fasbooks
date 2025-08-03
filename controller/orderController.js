@@ -234,7 +234,7 @@ const addNewAddress = async (req, res) => {
   }
 };
 const placeCODOrder = async (req, res) => {
-  console.log("cod controller working");
+  
   try {
     const addressId = req.body.addressId;
     const userId = req.session.user.id;
@@ -403,10 +403,11 @@ const returnOrder = async (req, res) => {
     
     order.status = 'returnRequested'
     order.returnStatus='requested'
-    order.returnReason=reason
+    order.returnReason=reason;
+    order.returnedAt=new Date()
     order.updatedAt = new Date();
     await order.save();
-
+    
     return res.json({ success: true, message: "Order returned successfully" });
 
   } catch (error) {

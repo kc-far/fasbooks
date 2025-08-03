@@ -11,7 +11,7 @@ const orderSchema = new mongoose.Schema({
             cancelledAt: { type: Date }, // Optional: Timestamp when canceled
             titleAtOrder: { type: String, required: true }, // Snapshot of product title
             priceAtOrder: { type: Number, required: true },
-            isReturned:{ type: Boolean, default: false },
+           
         }
     ],
     address: {

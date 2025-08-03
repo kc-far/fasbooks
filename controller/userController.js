@@ -280,8 +280,8 @@ const getProducts = async (req, res) => {
          const itemCount = cart ? cart.items.length : 0;
         
                 if (category && category !== 'all') {
-             filter.categoryId = category; // Ensure category field matches schema
-         }
+                   filter.categoryId = category; // Ensure category field matches schema
+                }
 
         if (search) {
             filter.title = new RegExp(search, 'i'); // Case-insensitive search on title
