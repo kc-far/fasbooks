@@ -40,14 +40,17 @@ router.post('/activeBook',adminController.activeBook)
 //
 router.get('/orders',adminAuth.adminAuth,adminController.getOrders)
 router.post('/orders/:id/status',adminAuth.adminAuth, adminController.orderStatus);
+router.get('/returnOrder',adminAuth.adminAuth,adminController.getReturnOrders)
+router.post('/acceptReturn/:orderId',adminAuth.adminAuth, adminController.acceptReturn);
+router.post('/rejectReturn/:orderId', adminAuth.adminAuth,adminController.rejectReturn);
+
 
 router.get('/report',adminAuth.adminAuth,adminController.getDeliveredSalesReport)
 router.route('/downloadSalesReport')
   .get(adminAuth.adminAuth,adminController.downloadSalesReport)
   .post(adminAuth.adminAuth,adminController.downloadSalesReport);
 router.post('/filterSalesReport',adminAuth.adminAuth,adminController.filterSalesReport)
-router.post('/acceptReturn/:orderId',adminAuth.adminAuth, adminController.acceptReturn);
-router.post('/rejectReturn/:orderId', adminAuth.adminAuth,adminController.rejectReturn);
+
 
 
 module.exports = router

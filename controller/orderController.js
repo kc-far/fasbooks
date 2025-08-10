@@ -161,7 +161,6 @@ const renderCheckout = async (req, res) => {
 
     const userAddresses = await Address.findOne({ userId });
     const addresses = userAddresses ? userAddresses.addresses : [];
-    console.log('from render',items);
     res.render("user/checkout", {
       items,
       cartTotal,
@@ -234,7 +233,7 @@ const addNewAddress = async (req, res) => {
   }
 };
 const placeCODOrder = async (req, res) => {
-  console.log("cod controller working");
+  
   try {
     const addressId = req.body.addressId;
     const userId = req.session.user.id;
@@ -324,9 +323,9 @@ const placeCODOrder = async (req, res) => {
 
 //order success
 const orderSuccess = async (req, res) => {
-  console.log("order success controll working")
+  
   const orderId = req.query.orderId; 
-   console.log('orderId:',orderId)
+  
   if (!orderId) {
     return res.status(400).send("Order ID is missing");
   }
@@ -350,7 +349,7 @@ const cancelOrder = async (req, res) => {
   try {
     const { orderId } = req.params;
     const userId = req.session.user.id;
-    console.log("Order ID:", orderId, "User ID:", userId);
+    
 
     // Find the order
     const order = await Order.findOne({ _id: orderId, userId: userId });
@@ -387,9 +386,7 @@ const returnOrder = async (req, res) => {
   try {
     const { orderId } = req.params;
     const userId = req.session.user.id;
-    const reason = req.body.reason
-    console.log("Order ID:", orderId, "User ID:", userId);
-
+    const reason = req.body.reason;
     // Find the order
     const order = await Order.findOne({ _id: orderId, userId: userId });
     if (!order) {
@@ -403,10 +400,11 @@ const returnOrder = async (req, res) => {
     
     order.status = 'returnRequested'
     order.returnStatus='requested'
-    order.returnReason=reason
+    order.returnReason=reason;
+    order.returnedAt=new Date()
     order.updatedAt = new Date();
     await order.save();
-
+    
     return res.json({ success: true, message: "Order returned successfully" });
 
   } catch (error) {
@@ -415,7 +413,48 @@ const returnOrder = async (req, res) => {
     
   }
 }
- 
+const cancelItem=async (req,res)=>{
+     const {orderId,productId}=req.params
+     try{
+         const order=await Order.findById(orderId).populate('items.productId');
+          if (!order) {
+                return res.status(404).send('Order not found');
+          }
+          const cancelItem=order.items.find(item=>item.productId._id.toString()===productId)
+          console.log(cancelItem)
+          if(!cancelItem){
+            return res.status(404).send('product not found in order')
+          }
+
+
+          cancelItem.isCancelled=true
+          cancelItem.cancelledAt=new Date()
+
+          await Book.findByIdAndUpdate(productId,{
+            $inc:{stock:cancelItem.quantity}
+          })
+        const subtotalUpdate=order.items.reduce((sum,item)=>{
+          if(!item.isCancelled){
+            return sum+=item.priceAtOrder*item.quantity;
+          }
+          return sum
+        },0)
+        const totalUpdate=Math.max(0,subtotalUpdate+order.shipping-order.discount)
+
+        order.subtotal=subtotalUpdate
+        order.total=totalUpdate
+
+        if(order.items.every(item=>item.isCancelled)){
+          order.status = 'cancelled'
+        }
+       
+         await order.save();
+     }catch(err){
+        console.error(err);
+        res.status(500).send('Server error');
+     }
+}
+
 const generateInvoicePDF = async (
     order,
     res,
@@ -594,9 +633,10 @@ module.exports = {
   addNewAddress,
   cancelOrder,
   returnOrder,
+  cancelItem,
   orderSuccess,
   orderFailed,
- placeCODOrder,
+  placeCODOrder,
   getInvoice,
 
 };

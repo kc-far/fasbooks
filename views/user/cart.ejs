@@ -49,7 +49,7 @@
                     <button class="btn-num-product-up flex items-center justify-center" data-action="increase" data-product-id="<%= item.productId._id %>" <%= item.quantity >= 5 ? 'disabled' : '' %>>
                         <i class="fs-16 zmdi zmdi-plus"></i>
                     </button>
-                    <input class="mtext-104 cl3 txt-center num-product mx-2" type="number" name="quantity[<%= item.productId._id %>]" value="<%= item.quantity %>" readonly id="quantity-<%= item.productId._id %>" style="width: 60px;">
+                    <input class="mtext-104 cl3 txt-center num-product mx-2" type="number"  readonly id="quantity-<%= item.productId._id %>" value="<%= item.quantity %>" style="width: 60px;">
                     <button class="btn-num-product-down flex items-center justify-center" data-action="decrease" data-product-id="<%= item.productId._id %>">
                         <i class="fs-16 zmdi zmdi-minus"></i>
                     </button>
@@ -221,9 +221,9 @@
                         const productPriceElement = document.getElementById(`price-${productId}`);
                         const productTotalElement = document.getElementById(`total-price-${productId}`);
                         if (productPriceElement && productTotalElement) {
-                            const productPrice = parseFloat(productPriceElement.innerText.replace('$', ''));
+                            const productPrice = parseFloat(productPriceElement.innerText.replace('₹', ''));
                             const productTotalPrice = data.quantity * productPrice;
-                            productTotalElement.innerText = `$${productTotalPrice.toFixed(2)}`;
+                            productTotalElement.innerText = `₹${productTotalPrice.toFixed(2)}`;
                         }
 
                         updateCartTotal();
@@ -259,18 +259,18 @@
             const productQuantityElement = row.querySelector('.num-product');
 
             if (productTotalElement && productNameElement && productQuantityElement) {
-                const productTotal = parseFloat(productTotalElement.innerText.replace('$', ''));
+                const productTotal = parseFloat(productTotalElement.innerText.replace('₹', ''));
                 const productName = productNameElement.innerText;
                 const productQuantity = parseInt(productQuantityElement.value);
                 total += productTotal;
 
-                subtotalDetails += `<li><span>${productName} (x${productQuantity}): $${productTotal.toFixed(2)}</span></li>`;
+                subtotalDetails += `<li><span>${productName} (x${productQuantity}): ₹${productTotal.toFixed(2)}</span></li>`;
             }
         });
 
         const subtotalElement = document.getElementById('subtotal');
         if (subtotalElement) {
-            subtotalElement.innerText = `$${total.toFixed(2)}`;
+            subtotalElement.innerText = `₹${total.toFixed(2)}`;
         }
 
         const subtotalDetailsElement = document.getElementById('subtotal-details');
@@ -281,12 +281,12 @@
         const shippingCharge = total > 25 ? 0 : 5;
         const cartTotalElement = document.getElementById('cart-total');
         if (cartTotalElement) {
-            cartTotalElement.innerText = `$${(total + shippingCharge).toFixed(2)}`;
+            cartTotalElement.innerText = `₹${(total + shippingCharge).toFixed(2)}`;
         }
 
         const shippingInfoElement = document.getElementById('shipping');
         if (shippingInfoElement) {
-            shippingInfoElement.innerText = total > 25 ? 'Free Shipping!' : 'Standard $5 shipping charge will apply.';
+            shippingInfoElement.innerText = total > 1000 ? 'Free Shipping!' : 'Standard ₹99 shipping charge will apply.';
         }
     }
 </script>
