@@ -159,18 +159,32 @@
                     confirmButtonText: "Yes, move it!"
                 }).then((result) => {
                     if (result.isConfirmed) {
-                        fetch('/addtocart/wishlist', {
+                        
+                            fetch('/addtocart/wishlist', {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
                             body: JSON.stringify({ productId: productId })
                             
-                        })
-                        .then(response => response.json())
-                        .then(data => {
-                            if (data.success) {
-                                Swal.fire("Moved!", "The item has been moved to your cart.", "success");
+                           }).then(response => response.json())
+                             .then(data => {
+                                console.log("Server response:", data)
+                                 if (data.success) {
+                                    Swal.fire({
+                                        icon: 'success',
+                                        title: 'Profile Updated',
+                                        text: 'Product Added to cart successfully!',
+                                        confirmButtonText: 'OK'
+                                    }).then(() => {
+                                        location.reload(); 
+                                    });
+                        
                             } else {
-                                Swal.fire("Error", "Unable to move item to cart.", "error");
+                                Swal.fire({
+                                    icon: 'error',
+                                    title: 'Add to cart',
+                                    text: data.error || 'Something went wrong. Please try again.',
+                                    confirmButtonText: 'OK'
+                                });
                             }
                         })
                         .catch(error => console.error('Error:', error));

@@ -13,8 +13,7 @@ const Category = require('../models/categoryModel');
 const nodemailer = require('nodemailer');
 const sendOtpToEmail = require('../config/sendOtpToEmail');
 const Wishlist = require('../models/wishListModel')
-
-//const Wallet = require('../models/walletModel');
+const Wallet=require('../models/walletModel')
 const Cart = require('../models/cartModel')
 
 const renderSignupPage =  (req, res) => {
@@ -64,7 +63,19 @@ const userSignup = async (req, res) => {
             }
 
             referredBy = referrer._id;
+            let wallet = await Wallet.findOne({ userId: referredBy });
+            if (!wallet) {
+                wallet = new Wallet({ userId: referredBy });
+            }
 
+            wallet.balance += 150; // Add referral bonus to the wallet
+            wallet.transactions.push({
+                amount: 100,
+                transactionType: 'credit',
+                message: 'Referral bonus credited for referring a new user.',
+            });
+
+            await wallet.save();
             
         }
 
@@ -174,7 +185,7 @@ const userLogin = async (req, res) => {
 
         // Validate password
         const isMatch = await bcrypt.compare(password, user.password);
-        
+        console.log(isMatch)
         if (!isMatch) {
             
             return res.render('user/login', { error: 'Invalid email or password.', message: "" });
@@ -224,7 +235,7 @@ const getHome = async (req, res) => {
         
         // Fetch active products and populate their category
         const products = await Book.find({ isActive: true }).populate('categoryId', 'name');
-        
+        const wallet=await Wallet.find({userId});
         const currentDate = new Date(); // Get the current date
         
         // Fetch distinct active categories
@@ -232,20 +243,23 @@ const getHome = async (req, res) => {
 
         // Fetch wishlist status
         const wishlistStatus = await Wishlist.find({ userId });
+        
 
         // Render the page and pass categories, products with offers, and wishlist status to the view
         res.render('user/home', { 
             products,//: productsWithOffers, 
             userId, 
             categories, 
-            //wallet, 
+            wallet, 
             wishlistStatus: wishlistStatus.map(status => status.productId.toString()) // Convert IDs to strings for easy comparison
         });
     } catch (error) {
         console.error('Error fetching home page data:', error);
         req.flash('error', 'An unexpected error occurred while loading the home page.');
         res.redirect('/error');
+        
     }
+    
 };
 
 
@@ -462,165 +476,91 @@ const getProfile = async (req, res) => {
     res.status(500).send("Error loading profile");
   }
 };
-const getOrders = async (req, res) => {
-    try {
-        const userId = req.session.user.id;
-        const page = parseInt(req.query.page) || 1; // Current page number from query parameter
-        const limit = 5; // Number of orders per page
-        const user = await User.findOne({ email });
 
-        // Query to get total number of orders
-        const totalOrders = await Order.countDocuments({ userId });
-        const totalPages = Math.ceil(totalOrders / limit);
-
-        // Fetch orders for the current page with pagination and populate product details
-        const orders = await Order.find({ userId })
-            .sort({ createdAt: -1 })
-            .skip((page - 1) * limit)
-            .limit(limit)
-            .populate('items.productId');
-
-        // Pass pagination data to the view
-        //const currentUrl = req.url.split('?')[0]; // Base URL without query parameters
-        res.render('user/profileOrders', {
-            orders,
-            //currentUrl,
-            currentPage: page,
-            totalPages,
-        });
-    } catch (error) {
-        console.error(error);
-        res.status(500).send('Server error');
-    }
-};
 const editProfile = async (req, res) => {
   try {
-    const { name, email, password, confirmPassword } = req.body;
+    const { name, email, currentPassword,newPassword } = req.body;
     const userId = req.session.user?.id;
-
-    if (!userId) {
+    const user=await User.findById(userId)
+    if (!user) {
       return res 
         .status(401)
-        .render("user/profilePersonal", { message: "Unauthorized" });
+        .json( { success: false, error: 'User not found' });
     }
 
-    // Validate password confirmation if provided
-    if (password && password !== confirmPassword) {
-      return res
-        .status(400)
-        .render("user/profilePersonal", { message: "Passwords do not match" });
+    const isMatch=await bcrypt.compare(currentPassword , user.password)
+    if(!isMatch){
+        return res.status(400).json({ success: false, error: 'Invalid current password' })
+
+    }
+    
+    if(email !==user.email){
+        const userExist=await User.findOne({email})
+        if(userExist){
+            return res.status(400).json({ success: false, error: 'Email already in use' })
+        }
     }
 
-    // Create an object to store updated fields
-    const updateFields = { name, email };
+    user.name=name;
+    user.email=email;
 
-    // If a new password is provided, hash it and add to the update object
-    if (password) {
-      const hashedPassword = await bcrypt.hash(password, 10);
-      updateFields.password = hashedPassword;
+    if(newPassword){
+        user.password=newPassword
     }
 
-    // Update the user's details in the database
-    const updatedUser = await User.findByIdAndUpdate(
-      userId,
-      updateFields,
-      { new: true }
-    );
+     await user.save()
 
-    if (!updatedUser) {
-      return res.status(404).send("User not found or unauthorized");
-    }
+    req.session.user = {
+    id: user._id,
+    name: user.name,
+    email: user.email
+    };
+    return res.json({ success: true, message: "Profile updated successfully" });
 
-    // Redirect to the profile page with a success message
-    res.redirect("/profilePersonal?success=true");
+
+    
   } catch (error) {
     console.error("Error updating profile:", error);
-    res.redirect("/profilePersonal?error=true");
+     res.status(500).json({success:false,error:'Internal Server Error'});
   }
 };
 
-// //edit profile
-// const editProfile = async (req, res) => {
-   
-//   try {
-//     const { name, email, password, confirmPassword } = req.body;
-//     const userId = req.session.user?.id;
-     
-//     if (!userId) {
-//       return res
-//         .status(401)
-//         .render("user/profilePersonal", { message: "Unauthorized" });
-//     }
-   
-//     const emailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-//     if (!emailValid.test(email)) {
-//       return res.status(400).render("user/profilePersonal", {
-//         message: "Please enter a valid email.",
-//       });
-//     }
-//     const user = await User.findById(userId);
-//     if (user.email !== email) {
-//       const userExist = await User.findOne({ email });
-//       if (userExist) {
-//         return res.status(400).render("user/profilePersonal", {
-//           message: "Email is already registered.",
-//         });
-//       }
-//     }
 
+const getAddress=async(req,res)=>{
+  try {
+    // Get user session details
+    const { email } = req.session.user;
+    const user = await User.findOne({ email });
 
-//     // Validate password confirmation if provided
-//     if (password && password !== confirmPassword) {
-//       return res
-//         .status(400)
-//         .render("user/profilePersonal", { message: "Passwords do not match" });
-//     }
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    // Fetch the user's address document
+    const addressDocument = await Address.findOne({ userId: user._id });
+
+    const addresses = addressDocument ? addressDocument.addresses : [];
+
+    const firstAddress = addresses.length > 0 ? addresses[0] : [];
+    res.render("user/profileAddress", {
+      user,
+      addresses,
+      firstAddress,
+      activeTab: 'address'
+    });
     
+  } catch (error) {
+    console.error("Error loading profile:", error);
+    //res.render("user/home", { message: "Server error" });
+    res.status(500).send("Error loading profile");
+  }
+};
 
-//     // Create an object to store updated fields
-//     const updateFields = { name, email };
-
-//     // If a new password is provided, hash it and add to the update object
-//     if (password) {
-//       const hashedPassword = await bcrypt.hash(password, 10);
-//       updateFields.password = hashedPassword;
-//     }
-  
-//     const orders = await Order.find({ userId })
-//     // Update the user's details in the database
-//     const updatedUser = await User.findByIdAndUpdate(
-//       userId,
-//       updateFields,
-//       { new: true },
-      
-//     );
-   
-
-//     if (!updatedUser) {
-//       return res.status(404).send("User not  unauthorized");
-//     }
-     
-//     // Redirect to the profilePersonal page with a success message
-//     res.render("user/profilePersonal",{
-//        user :updatedUser,
-//        orders,
-//        message:'profile edited successfully'
-
-//     });
-  
-//   } catch (error) {
-//     console.error("Error updating profile:", error);
-
-//     res.status(500).render("user/profilePersonal", {
-//       message: "Something went wrong. Please try again.",
-//     });
-   
-//   }
-// };
 
 //add address
 const addAddress = async (req, res) => {
   try {
+    console.log('add address working')
     const {
       name,
       phone,
@@ -635,7 +575,7 @@ const addAddress = async (req, res) => {
     const userId = req.session.user?.id;
 
     if (!userId) {
-      return res.render("user/profilePersonal", { message: "Unauthorized" });
+      return res.render("user/profileAddress", { message: "Unauthorized" });
     }
 
     // Find the user's address document or create a new one if it doesn't exist
@@ -664,10 +604,10 @@ const addAddress = async (req, res) => {
     // Save the document
     await userAddress.save();
 
-    res.redirect("/profilePersonal?section=addressBook");
+    res.redirect("/profileAddress?section=addressBook");
   } catch (error) {
     console.error("Error adding address:", error);
-    res.redirect("/profilePersonal?section=addressBook&error=true");
+    res.redirect("/profileAddress?section=addressBook&error=true");
   }
 };
 
@@ -678,7 +618,7 @@ const editAddress = async (req, res) => {
     const userId = req.session.user?.id;
 
     if (!userId) {
-      return res.render("user/profilePersonal", { message: "Unauthorized" });
+      return res.render("user/profileAddress", { message: "Unauthorized" });
     }
 
     const {
@@ -716,10 +656,10 @@ const editAddress = async (req, res) => {
       return res.status(404).send("Address not found or user unauthorized");
     }
 
-    res.redirect("/profilePersonal?section=addressBook");
+    res.redirect("/profileAddress?section=addressBook");
   } catch (error) {
     console.error("Error updating address:", error);
-    res.redirect("/profilePersonal?section=addressBook&error=true");
+    res.redirect("/profileAddress?section=addressBook&error=true");
   }
 };
 
@@ -731,7 +671,7 @@ const deleteAddress = async (req, res) => {
 
     // Check if the user is authenticated
     if (!userId) {
-      return res.render("user/profilePersonal", { message: "Unauthorized" });
+      return res.render("user/profileAddress", { message: "Unauthorized" });
     }
 
     //remove the address from the addresses array
@@ -745,13 +685,75 @@ const deleteAddress = async (req, res) => {
       return res.status(404).send("Address not found or user unauthorized");
     }
 
-    res.redirect("/profilePersonal?section=addressBook");
+    res.redirect("/profileAddress?section=addressBook");
   } catch (error) {
     console.error("Error deleting address:", error);
-    res.redirect("/profilePersonal?section=addressBook&error=true");
+    res.redirect("/profileAddress?section=addressBook&error=true");
   }
 };
 
+const getOrders = async (req, res) => {
+    try {
+        const userId = req.session.user.id;
+         const { email } = req.session.user;
+         const user = await User.findOne({ email });
+        const page = parseInt(req.query.page) || 1; // Current page number from query parameter
+        const limit = 3; // Number of orders per page
+        const search = req.query.search || '';
+
+        const query = search ? { $or: [
+            { OrderId: { $regex: search, $options: 'i' } },
+            { status: { $regex: search, $options: 'i' } }
+        ] }: {};
+        // Query to get total number of orders
+        const totalOrders = await Order.countDocuments(query);
+        const totalPages = Math.ceil(totalOrders / limit);
+        
+        
+        
+        // Fetch orders for the current page with pagination and populate product details
+        const orders = await Order.find({ userId })
+            .sort({ createdAt: -1 })
+            .skip((page - 1) * limit)
+            .limit(limit)
+            .populate('items.productId');
+
+        // Pass pagination data to the view
+        
+        res.render('user/profileOrders', {
+            orders,
+            user,
+            currentPage: page,
+            totalPages,
+            search
+        });
+    } catch (error) {
+        console.error(error);
+        res.status(500).send('Server error');
+    }
+};
+const orderDetails=async(req,res)=>{
+    try{
+        const { email } = req.session.user;
+         const user = await User.findOne({ email });
+         const orderId = req.params.orderId
+         
+         const order = await Order.findById(orderId).populate('items.productId',"title images")
+            
+        if(!order){
+            return res.status(404).send('order not found')
+        }
+      
+     
+       res.render('user/orderDetails',{
+        user,
+        order,
+       })
+    }catch(err){
+     console.error(err);
+    }
+
+}
 // Send OTP for Forgot Password
 const forgotPassword = async (req, res) => {
     const { email } = req.body;
@@ -901,7 +903,50 @@ const removeWishlist = async (req, res) => {
     }
 };
 
+const getWallet = async (req, res) => {
+    try {
+        
+        
+        const userId = req.session.user.id;
+        const page = parseInt(req.query.page) || 1;
+        const limit = 10;
+        const skip = (page - 1) * limit;
 
+        const wallet = await Wallet.findOne({ userId });
+        
+        if (!wallet) {
+            return res.render('user/wallet', { 
+                wallet: null, 
+                message: 'Wallet not found',
+                currentPage: 1,
+                totalPages: 1
+            });
+        }
+
+        const totalTransactions = wallet.transactions.length;
+        const totalPages = Math.ceil(totalTransactions / limit);
+
+        const paginatedTransactions = wallet.transactions
+            .sort((a, b) => new Date(b.date) - new Date(a.date)) // Sort by date descending
+            .slice(skip, skip + limit);
+
+        // Create a new wallet object with paginated transactions
+        const paginatedWallet = {
+            ...wallet.toObject(),
+            transactions: paginatedTransactions
+        };
+
+        res.render('user/wallet', { 
+            wallet: paginatedWallet,
+            currentPage: page,
+            totalPages,
+            totalTransactions
+        });
+    } catch (error) {
+        console.error(error);
+        res.status(500).send('Server error');
+    }
+};
 const contactPage = (req, res) => {
     res.render('user/contact')
 }
@@ -926,7 +971,9 @@ module.exports = {
     logout,
     getProfile,
     getOrders,
+    orderDetails,
     editProfile,
+    getAddress,
     addAddress,
     editAddress,
     deleteAddress,
@@ -939,6 +986,7 @@ module.exports = {
     getWishlistItems,
     addBooksWishlist,
     removeWishlist,
+    getWallet,
     contactPage,
     aboutPage
     

@@ -10,6 +10,7 @@ const Category = require('../models/categoryModel');
 const Order=require('../models/orderModel')
 const  PDFDocument  = require('pdfkit');
 const Admin = require("../models/adminModel")
+const Wallet =require('../models/walletModel')
 
 //login page
 
@@ -226,7 +227,7 @@ const blockUser = async (req, res) => {
         const { userId } = req.body;  
 
         if (!userId) {
-            console.error('User ID is missing!'); 
+            
             return res.status(400).send('User ID is required');
         }
 
@@ -244,7 +245,7 @@ const unblockUser = async (req, res) => {
     try {
         const { userId } = req.body; 
         if (!userId) {
-            console.error('User ID is missing!'); 
+            
             return res.status(400).send('User ID is required');
         }
 
@@ -465,7 +466,7 @@ const getOrders = async (req, res) => {
 
 // Update order status
 const orderStatus = async (req, res) => {
-    console.log("working orderstatus")
+    
   try {
     const { id } = req.params;
     const { status } = req.body;
@@ -477,6 +478,8 @@ const orderStatus = async (req, res) => {
       "delivered",
       "cancelled",
       "returned",
+      "paid",
+      "processing"
     ];
     
     if (!validStatuses.includes(status)) {
@@ -729,65 +732,6 @@ const filterSalesReport = async (req, res) => {
     }
 };
 
-const approveReturnRequest = async (req, res) => {
-    const { orderId } = req.params;
-    const { itemId } = req.body; 
-
-    try {
-        const order = await Order.findById(orderId).populate('items.productId');
-        if (!order) return res.status(404).send('Order not found');
-
-        const item = order.items.find(item => item._id.toString() === itemId);
-        if (!item) return res.status(404).send('Item not found');
-        if (item.returnStatus !== 'requested') return res.status(400).send('Return request is not pending for this item');
-
-        
-        item.returnStatus = 'approved';
-        item.isReturned = true;
-
-        if (item.returnReason !== 'Damaged') {
-            await Book.findByIdAndUpdate(item.productId._id, { $inc: { stock: item.quantity } });
-        }
-
-        const originalSubtotal = order.items.reduce((sum, item) => sum + item.priceAtOrder * item.quantity, 0);
-        const originalDiscount = order.discount || 0;
-        const discountPercentage = originalDiscount / originalSubtotal;
-
-        const itemDiscount = (item.priceAtOrder * item.quantity / originalSubtotal) * originalDiscount;
-        const refundAmount = item.priceAtOrder * item.quantity - itemDiscount; 
-
-        const remainingItems = order.items.filter(item => !item.isReturned); 
-        const updatedSubtotal = remainingItems.reduce((sum, item) => sum + item.priceAtOrder * item.quantity, 0);
-        const updatedDiscount = updatedSubtotal * discountPercentage; 
-        const updatedTotal = Math.max(0, updatedSubtotal + order.shipping - updatedDiscount); 
-
-        order.subtotal = updatedSubtotal;
-        order.discount = updatedDiscount;
-        order.total = updatedTotal;
-
-        if ((order.paymentStatus === 'paid' && order.paymentMethod !== 'cashOnDelivery') || order.paymentMethod === 'wallet') {
-            let wallet = await Wallet.findOne({ userId: order.userId });
-            if (!wallet) wallet = await Wallet.create({ userId: order.userId });
-
-            wallet.balance += refundAmount; 
-            wallet.transactions.push({
-                amount: refundAmount,
-                transactionType: 'credit',
-                orderId: order._id,
-                message: `${refundAmount.toFixed(2)} credited for returned product`,
-            });
-            await wallet.save();
-        }
-
-        await order.save();
-
-        res.redirect('/admin/orders'); // Redirect to admin orders page
-    } catch (error) {
-        console.error(error);
-        res.status(500).send('Server error');
-    }
-};
-
 
 const getReturnOrders=async (req,res)=>{
        try{
@@ -809,8 +753,10 @@ const getReturnOrders=async (req,res)=>{
        }
 }
 const acceptReturn = async (req, res) => {
+    
   try {
     const { orderId } = req.params;
+    
 
     // Validate orderId
     if (!mongoose.Types.ObjectId.isValid(orderId)) {
@@ -828,6 +774,7 @@ const acceptReturn = async (req, res) => {
       return res.status(400).json({ success: false, message: "Return request is not valid" });
     }
 
+
     // Update the order status
     order.status = "returned";
     order.returnStatus = "accepted";
@@ -836,6 +783,7 @@ const acceptReturn = async (req, res) => {
 
     // Refund the stock
     for (const item of order.items) {
+        
       const product = await Book.findById(item.productId);
       if (!product) {
         throw new Error(`Product with ID ${item.productId} not found`);
@@ -843,10 +791,29 @@ const acceptReturn = async (req, res) => {
       product.stock += item.quantity;
       await product.save();
     }
+    let wallet=await Wallet.findOne({userId:order.userId})
+    if(!wallet){
+       wallet=new Wallet({
+        userId:order.userId,
+        balance:0,
+        transactions:[]
 
+       })
+    }
     
 
+    wallet.balance+=order.total;
+    wallet.transactions.push({
+        amount:order.total,
+        transactionType:'credit',
+        date:new Date(),
+        orderId:order._id,
+        message:`${order.total.toFixed(2)} credited for returned product`,
+    })
+    await wallet.save()
+ 
     res.json({ success: true, message: "Return request accepted successfully" });
+    
   } catch (error) {
     console.error("Error accepting return request:", error);
     res.status(500).json({ success: false, message: "Server error" });
