@@ -172,6 +172,74 @@ const renderCheckout = async (req, res) => {
     res.status(500).json({ message: "Server error" });
   }
 };
+const getCartItems = async (req, res) => {
+    const userId = req.session.user?.id;
+
+    try {
+        const cart = await Cart.findOne({ userId }).populate('items.productId');
+
+        if (!cart || cart.items.length==0) {
+            return req.xhr ? res.json({ redirect: '/cart', items: [] })
+            :res.render('user/cart', { items: [] ,errorMessage:null,outOfStockItems:[]});
+        }
+
+        const outOfStockItems = [];
+        let stockError = false;
+        for (let item of cart.items) {
+            if (item.productId.stock < item.quantity) {
+                stockError = true;
+                outOfStockItems.push({
+                    name: item.productId.title,
+                    availableStock: item.productId.stock,
+                    requestedQuantity: item.quantity,
+                    productId: item.productId._id,
+                });
+            }
+        }
+
+        if(stockError){
+            return req.xhr ?
+              res.json({ stockError: true, outOfStockItems }) 
+            : res.render('user/cart', { stockError: true, outOfStockItems:[],errorMessage:null})
+        }
+      const cartTotal = Math.round(
+      cart.items.reduce(
+        (total, item) => total + item.productId.price * item.quantity,
+        0
+      )
+    );
+
+    const userAddresses = await Address.findOne({ userId });
+    const addresses = userAddresses ? userAddresses.addresses : [];
+        const items = cart.items.map(item => {
+            return {
+                productId: item.productId._id,
+                name: item.productId.title,
+                imageUrl: item.productId.images[0], 
+                price: item.productId.price,
+                quantity: item.quantity,
+                 
+            };
+        })
+        if(req.xhr){
+          return res.json({
+                stockError: false,
+                items,
+                errorMessage: null,
+                userId,
+                cartTotal,
+                addresses
+
+            });
+        }else{
+          res.render('user/checkout', { items,errorMessage:null,cartTotal,userId,addresses });
+        }
+        
+    } catch (error) {
+        console.log(error);
+        res.status(500).send('Error fetching cart');
+    }
+};
 
 //add new address
 const addNewAddress = async (req, res) => {
@@ -446,6 +514,7 @@ const cancelItem=async (req,res)=>{
 
         if(order.items.every(item=>item.isCancelled)){
           order.status = 'cancelled'
+          order.total = 0
         }
        
          await order.save();
@@ -638,5 +707,5 @@ module.exports = {
   orderFailed,
   placeCODOrder,
   getInvoice,
-
+  getCartItems
 };

@@ -18,7 +18,7 @@ const Wishlist = require('../models/wishListModel')
 const addToCart = async (req, res) => {
     const { productId } = req.params;
     const userId = req.session.user.id;
-    console.log(userId)
+    
 
     try {
         let cart = await Cart.findOne({ userId });
@@ -92,7 +92,7 @@ const getCart = async (req, res) => {
         const cart = await Cart.findOne({ userId }).populate('items.productId');
 
         if (!cart) {
-            return res.render('user/cart', { items: [] ,errorMessage:null,});
+            return res.render('user/cart', { items: [] ,errorMessage:null});
         }
 
         const items = cart.items.map(item => {
@@ -279,8 +279,8 @@ const addToCartFromWishlist = async (req, res) => {
         await Wishlist.findOneAndDelete({ userId, productId });
 
 
-    
-        return res.json({ success: true, message: 'Product moved to cart successfully' })
+        // Redirect to the wishlist page or send a success response
+        res.redirect('/wishlist');
     } catch (error) {
         console.error(error);
         res.status(500).json({ success: false, message: 'Error moving item to cart' });

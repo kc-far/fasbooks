@@ -126,7 +126,48 @@
 	
 
 <script>
-    
+checkoutForm.addEventListener('submit', async (event) => {
+    event.preventDefault();
+
+    try {
+        const response = await fetch('/checkout', { method: 'GET', headers: { 'X-Requested-With': 'XMLHttpRequest' } });
+
+        if (!response.ok) {
+            throw new Error(`Server responded with status ${response.status}`);
+        }
+
+        const data = await response.json();
+
+        if (data.redirect) {
+            // Handle redirection for authentication or empty cart
+            window.location.href = data.redirect;
+        } else if (data.stockError) {
+            // Show stock errors
+            const items = data.outOfStockItems
+                .map((item) => `${item.name} (Available: ${item.availableStock}, Requested: ${item.requestedQuantity})`)
+                .join('\n');
+
+            Swal.fire({
+                icon: 'error',
+                title: 'Stock Issues',
+                text: `The following items have stock issues:\n\n${items}`,
+            });
+        } else {
+            // Validation passed, navigate to the checkout page
+            window.location.href = '/checkout';
+        }
+    } catch (error) {
+        console.error('Error during checkout validation:', error);
+
+        Swal.fire({
+            icon: 'error',
+            title: 'Error',
+            text: 'An unexpected error occurred. Please try again later.',
+        });
+    }
+});
+
+
 	document.querySelectorAll('.remove-item').forEach(button => {
         button.addEventListener('click', async (e) => {
 			console.log("Event target:", e.target);
@@ -278,7 +319,7 @@
             subtotalDetailsElement.innerHTML = subtotalDetails;
         }
 
-        const shippingCharge = total > 25 ? 0 : 5;
+        const shippingCharge = total > 1000 ? 0 : 99;
         const cartTotalElement = document.getElementById('cart-total');
         if (cartTotalElement) {
             cartTotalElement.innerText = `₹${(total + shippingCharge).toFixed(2)}`;
