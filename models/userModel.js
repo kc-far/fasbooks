@@ -9,7 +9,6 @@ const userSchema = new mongoose.Schema({
     isAdmin: { type: Boolean, required: true, default: false },
     isBlocked: { type: Boolean, required: true, default: false },
     referralCode: { type: String, unique: true }, // Add referralCode field
-    gender: { type: String, enum: ['male', 'female', 'other'] },
     otp: String,
     otpExpires: Date,
 });

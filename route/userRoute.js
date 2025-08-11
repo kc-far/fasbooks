@@ -45,7 +45,10 @@ router.get('/home', userAuth.checkSession, userController.getHome);
 router.get('/profilePersonal', userAuth.checkSession, userController.getProfile);
 router.post('/editProfile',userAuth.checkSession,  userController.editProfile);
 router.get('/profileOrders', userAuth.checkSession, userController.getOrders)
+router.get('/orderDetails/:orderId',userAuth.checkSession,  userController.orderDetails)
+
 // Address
+router.get('/profileAddress',userAuth.checkSession,userController.getAddress)
 router.post('/addAddress', userAuth.checkSession, userController.addAddress);
 router.post('/editAddress/:addressId', userAuth.checkSession, userController.editAddress);
 router.post('/deleteAddress/:addressId', userAuth.checkSession, userController.deleteAddress);
@@ -68,20 +71,23 @@ router.post('/wishlist/remove/:id',userAuth.checkSession, userController.removeW
 
 // Checkout
 //router.post('/checkout', userAuth.checkSession, orderController.processCheckout);
-router.get('/checkout', userAuth.checkSession, orderController.renderCheckout);
+router.get('/checkout', userAuth.checkSession, orderController.getCartItems);
 router.post('/addNewAddress', userAuth.checkSession, orderController.addNewAddress);
 
-// // Payment
+ // Payment
  router.post('/checkoutCOD', userAuth.checkSession, orderController.placeCODOrder);
 
 //Order
 router.get('/orderSuccess', userAuth.checkSession, orderController.orderSuccess);
 router.get('/orderFailed', userAuth.checkSession, orderController.orderFailed);
 router.post('/ordersCancel/:orderId', userAuth.checkSession, orderController.cancelOrder);
+router.post('/orders/:orderId/cancel/:productId',userAuth.checkSession,orderController.cancelItem)
 router.post('/ordersReturn/:orderId', userAuth.checkSession, orderController.returnOrder);
 
 router.get('/orders/:orderId/invoice',userAuth.checkSession,orderController.getInvoice)
-//router.post('/orders/return/:orderId/:productId', userAuth.checkSession, orderController.returnOrder);
+
+//wallet
+router.get('/wallet',userAuth.checkSession, userController.getWallet)
 
 // Google Authentication
 router.get('/auth/google', passport.authenticate('google', { scope: ['profile', 'email'] }));
