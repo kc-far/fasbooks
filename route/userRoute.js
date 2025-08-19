@@ -70,19 +70,22 @@ router.post('/wishlistAdd/:id',userAuth.checkSession,userController.addBooksWish
 router.post('/wishlist/remove/:id',userAuth.checkSession, userController.removeWishlist)
 
 // Checkout
-//router.post('/checkout', userAuth.checkSession, orderController.processCheckout);
+router.post('/checkout', userAuth.checkSession, orderController.processCheckout);
 router.get('/checkout', userAuth.checkSession, orderController.getCartItems);
 router.post('/addNewAddress', userAuth.checkSession, orderController.addNewAddress);
 
  // Payment
- router.post('/checkoutCOD', userAuth.checkSession, orderController.placeCODOrder);
+ //router.post('/checkoutCOD', userAuth.checkSession, orderController.placeCODOrder);
+ router.post('/verify-razorpay-payment',userAuth.checkSession, orderController.verifyPayment);
+ router.get('/failed',userAuth.checkSession,orderController.paymentFailed)
+ router.get('/order-details/:orderId',userAuth.checkSession,orderController.retryPayment);
 
 //Order
 router.get('/orderSuccess', userAuth.checkSession, orderController.orderSuccess);
 router.get('/orderFailed', userAuth.checkSession, orderController.orderFailed);
 router.post('/ordersCancel/:orderId', userAuth.checkSession, orderController.cancelOrder);
 router.post('/orders/:orderId/cancel/:productId',userAuth.checkSession,orderController.cancelItem)
-router.post('/ordersReturn/:orderId', userAuth.checkSession, orderController.returnOrder);
+router.post('/ordersReturn/:orderId/:productId', userAuth.checkSession, orderController.returnItem);
 
 router.get('/orders/:orderId/invoice',userAuth.checkSession,orderController.getInvoice)
 

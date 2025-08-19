@@ -7,10 +7,14 @@ const orderSchema = new mongoose.Schema({
         {
             productId: { type: mongoose.Schema.Types.ObjectId, ref: 'Book', required: true },
             quantity: { type: Number, required: true },
-            isCancelled: { type: Boolean, default: false }, // New field to track canceled status
-            cancelledAt: { type: Date }, // Optional: Timestamp when canceled
-            titleAtOrder: { type: String, required: true }, // Snapshot of product title
+            isCancelled: { type: Boolean, default: false }, 
+            cancelledAt: { type: Date }, 
+            titleAtOrder: { type: String, required: true }, 
             priceAtOrder: { type: Number, required: true },
+            returnReason: { type: String }, 
+            returnStatus: { type: String, enum: ['pending', 'accepted', 'rejected', 'requested'], default: 'pending' }, 
+            returnedAt: { type: Date },
+            isReturned:{ type: Boolean, default: false }
             
         }
     ],
@@ -27,13 +31,16 @@ const orderSchema = new mongoose.Schema({
     discount: { type: Number, default: 0 },  // New field for combined offer and coupon discounts
     shipping: { type: Number, required: true },
     total: { type: Number, required: true },
-    status: { type: String, enum: [ 'shipped', 'delivered', 'cancelled', 'paid', 'returned', 'pending','returnRequested','processing'], default: 'pending' },
+    status: { type: String, enum: [ 'shipped', 'delivered', 'cancelled', 'paid', 'returned', 'pending','returnRequested','processing','itemsReturned'], default: 'pending' },
     cancelledAt: { type: Date },
     deliveredAt: { type: Date },
+    razorpayOrderId: { type: String },
+    razorpayPaymentId: { type: String },
+    razorpaySignature: { type: String },
     paymentStatus: { type: String, enum: ['pending', 'paid', 'failed'], default: 'pending' },
     returnReason: { type: String }, 
     returnStatus: { type: String, enum: ['pending', 'accepted', 'rejected', 'requested'], default: 'pending' }, 
-    returnedAt: { type: Date },// Snapshot of product price
+    returnedAt: { type: Date },
 }, { timestamps: true });
 
 orderSchema.pre('save', function (next) {

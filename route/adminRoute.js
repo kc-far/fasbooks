@@ -40,7 +40,7 @@ router.post('/activeBook',adminController.activeBook)
 //
 router.get('/orders',adminAuth.adminAuth,adminController.getOrders)
 router.post('/orders/:id/status',adminAuth.adminAuth, adminController.orderStatus);
-router.get('/returnOrder',adminAuth.adminAuth,adminController.getReturnOrders)
+router.get('/returnOrders',adminAuth.adminAuth,adminController.getReturnOrders)
 router.post('/acceptReturn/:orderId',adminAuth.adminAuth, adminController.acceptReturn);
 router.post('/rejectReturn/:orderId', adminAuth.adminAuth,adminController.rejectReturn);
 

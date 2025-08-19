@@ -167,22 +167,7 @@
         <div class="col-md-8">
           <div class="card border-0 mb-4">
             <div class="card-body p-0">
-                <div >
-                <% if (order.status === 'delivered' && order.returnStatus === 'pending') { %>
-                  <!-- Return Button -->
-                  <button class="btn btn-primary mt-3" onclick="showReturnForm('<%= order._id %>')">
-                    Return Order
-                  </button>
-                  <!-- Hidden Return Form -->
-                  <div id="return-form-<%= order._id %>" class="return-form mt-3" style="display: none;">
-                    <textarea class="form-control mb-2" id="return-reason-<%= order._id %>" rows="3" placeholder="Enter return reason"></textarea>
-                    <button class="btn btn-primary btn-sm" onclick="submitReturnOrder('<%= order._id %>')">Confirm Return</button>
-                    <button class="btn btn-secondary btn-sm" onclick="hideReturnForm('<%= order._id %>')">Close</button>
-                  </div>
-                <% } else { %>
-                  <p class="text-danger mt-3">No actions available for this order.</p>
-                <% } %>
-              </div>  
+                 
               <!-- Order Status and Payment Method -->
               <div class="row mb-1 mr-3 ">
                 <div class="col-md-6">
@@ -229,17 +214,48 @@
                       <td class="align-middle p-2">
                         <h6 class="mb-1">
                           <%= item.titleAtOrder %>
-                          <% if (order.status =='returned') { %>
-                            <span class="badge badge-success ml-2">Returned</span>
-                          <% } else if (order.status =='cancelled') { %>
-                            <span class="badge badge-danger ml-2">Cancelled</span>
-                          <% } %>
+                          
                         </h6>
                         <small >
                           Qty: <%= item.quantity %> | Price: ₹<%= item.priceAtOrder ? item.priceAtOrder.toFixed(2) : '0.00' %>
                         </small>
                       </td>
-                      <% if ((order.status === 'pending' || order.status === 'paid') && order.paymentStatus === 'pending' && order.status !== 'delivered' && !item.isCancelled) { %>
+                      <td>
+                        <% if (order.status =='returned') { %>
+                            <span class="badge badge-success ml-2">Returned</span>
+                          <% } else if (order.status =='cancelled') { %>
+                            <span class="badge badge-danger ml-2">Cancelled</span>
+                        <% } %>
+                      </td>
+                      <% if (order.status === 'delivered' && !item.isReturned && !item.isCancelled) { %>
+                        <td class="align-middle text-center p-2">
+                          <% if (item.returnStatus === 'requested') { %>
+                            <button class="btn btn-warning btn-sm" disabled>
+                              Return Requested
+                            </button>
+                            <p>Reason: <%= item.returnReason %></p>
+                          <% } else { %>
+                            <button
+                              class="btn btn-warning btn-sm"
+                              
+                             onclick="showReturnForm('<%= order._id %>','<%= item.productId._id %>')"
+                            >Request Return</button>
+                             <!-- Hidden Return Form -->
+                  <div id="return-form-<%= order._id %>_<%= item.productId._id %>" class="return-form mt-3" style="display: none;">
+                    <textarea class="form-control mb-2" id="return-reason-<%= order._id %>_<%= item.productId._id %>" rows="3" placeholder="Enter return reason"></textarea>
+                    <button class="btn btn-primary btn-sm" onclick="submitReturnOrder('<%= order._id %>','<%= item.productId._id %>')">Confirm Return</button>
+                    <button class="btn btn-secondary btn-sm" onclick="hideReturnForm('<%= order._id %>','<%= item.productId._id %>')">Close</button>
+                  </div>
+                          <% } %>
+                        </td>
+                        <% } else { %>
+                        <td class="align-middle text-center p-2">
+                          <button class="btn btn-secondary btn-sm" disabled>
+                            Return Not Available
+                          </button>
+                        </td>
+                      <% } %>
+                      <% if ((order.status === 'pending' || order.status === 'paid') && (order.paymentStatus === 'paid'||order.paymentStatus==='pending')&& order.status !== 'delivered' && !item.isCancelled) { %>
                         <td class="align-middle text-center p-2">
                           <button
                             class="btn btn-danger btn-sm"
@@ -469,20 +485,20 @@
         }
 
     // Show the return form
-function showReturnForm(orderId) {
-    const form = document.getElementById(`return-form-${orderId}`);
+function showReturnForm(orderId,productId) {
+    const form = document.getElementById(`return-form-${orderId}_${productId}`);
     form.style.display = 'block';
 }
 
 // Hide the return form
-function hideReturnForm(orderId) {
-    const form = document.getElementById(`return-form-${orderId}`);
+function hideReturnForm(orderId,productId) {
+    const form = document.getElementById(`return-form-${orderId}_${productId}`);
     form.style.display = 'none';
 }
 
 // Submit the return order
-function submitReturnOrder(orderId) {
-    const reason = document.getElementById(`return-reason-${orderId}`).value.trim();
+function submitReturnOrder(orderId,productId) {
+    const reason = document.getElementById(`return-reason-${orderId}_${productId}`).value.trim();
     if (!reason) {
         Swal.fire({
             icon: 'warning',
@@ -504,7 +520,7 @@ function submitReturnOrder(orderId) {
     }).then((result) => {
         if (result.isConfirmed) {
             // Proceed with return order
-            fetch(`/ordersReturn/${orderId}`, {
+            fetch(`/ordersReturn/${orderId}/${productId}`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',

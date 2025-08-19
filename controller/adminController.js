@@ -733,64 +733,112 @@ const filterSalesReport = async (req, res) => {
 };
 
 
-const getReturnOrders=async (req,res)=>{
-       try{
-        const page = parseInt(req.query.page) || 1; 
-        const limit = 5; 
-        const skip = (page - 1) * limit;
+// const getReturnOrders=async (req,res)=>{
+//     console.log(1)
+//        const { orderId } = req.params;
+//        cosole.log('orderId',orderId) 
+//        try{
+//         console.log(2)
+//         const page = parseInt(req.query.page) || 1; 
+//         const limit = 5; 
+//         const skip = (page - 1) * limit;
+//         console.log(3)
+//         const order=await Order.findById(orderId)
+//                   .populate('items.productId')
+//                   .populate('userId')
+//         console.log("order...",order)
+//         if (!order) return res.status(404).send('Order not found');
 
-        const returnOrders=await Order.find({returnStatus:'requested'})
-                           .populate('userId')
-                           .populate('items.productId')
-                           .limit(limit)
-                           .skip(skip)
-                           .sort({ returnedAt: -1 });
-        const totalPages = Math.ceil(returnOrders/limit)
-        return res.render('admin/returnOrders',{returnOrders, currentPage: page, totalPages})
-       }catch(err) {
-          console.log(err)
-          res.status(500).send('error occure while fetching return orders')
-       }
-}
-const acceptReturn = async (req, res) => {
-    
+//         const returnOrders=order.items.filter(item=>item.returnStatus=='requested')
+//                                       .sort((a, b) => new Date(b.returnedAt) - new Date(a.returnedAt));
+// console.log(4)
+//         const paginatedItems = returnOrders.slice(skip, skip + limit);                             
+//         const totalPages = Math.ceil(returnOrders.length/limit)
+//         console.log(5)
+//         return res.render('admin/returnOrders',{returnOrders:paginatedItems, currentPage: page, totalPages})
+//         console.log(6)
+//        }catch(err) {
+//           console.log(err)
+//           res.status(500).send('error occure while fetching return orders')
+//        }
+// }
+
+
+const getReturnOrders = async (req, res) => {
+  
   try {
-    const { orderId } = req.params;
+    const page = parseInt(req.query.page) || 1; 
+    const limit = 5; 
+    const skip = (page - 1) * limit;
+    
+    const orders = await Order.find()
+                    .populate('items.productId')
+                    .populate('userId');
+  
+
+    const allReturnItems = orders.reduce((acc, order) => {
+      const requestedItems = order.items.filter(item => item.returnStatus === 'requested')
+                                      .map(item => ({
+                                        ...item.toObject(),
+                                        orderId: order._id,
+                                        userId: order.userId
+                                      }));
+      return [...acc, ...requestedItems];
+    }, []);
+
+    allReturnItems.sort((a, b) => new Date(b.returnedAt) - new Date(a.returnedAt));
+
+    const paginatedItems = allReturnItems.slice(skip, skip + limit);                             
+    const totalPages = Math.ceil(allReturnItems.length / limit);
     
 
-    // Validate orderId
-    if (!mongoose.Types.ObjectId.isValid(orderId)) {
-      return res.status(400).json({ success: false, message: "Invalid order ID" });
-    }
+    return res.render('admin/returnOrders', { returnOrders: paginatedItems, currentPage: page, totalPages });
+  } catch (err) {
+    console.error('Error fetching return orders:', err.stack);
+    res.status(500).send('error occurred while fetching return orders');
+  }
+};
 
-    // Find the order
-    const order = await Order.findById(orderId);
+
+const acceptReturn = async (req, res) => {
+    const { orderId } = req.params;
+    const { itemId } = req.body; 
+  try {
+    
+
+   
+    const order = await Order.findById(orderId).populate('items.productId');
+    console.log('oreders...:',order)
     if (!order) {
       return res.status(404).json({ success: false, message: "Order not found" });
     }
 
-    // Validate order status
-    if (order.status !== "returnRequested") {
-      return res.status(400).json({ success: false, message: "Return request is not valid" });
-    }
+   const item = order.items.find(item => item._id.toString() === itemId);
+   console.log('Received orderId:', orderId, 'itemId:', itemId)
+    if (!item) return res.status(404).json({ success: false, message:'Item not found'});
+    if (item.returnStatus !== 'requested') return res.status(400).send('Return request is not pending for this item');
+
 
 
     // Update the order status
-    order.status = "returned";
-    order.returnStatus = "accepted";
-    order.updatedAt = new Date();
-    await order.save();
+   
+    item.returnStatus = "accepted";
+    item.isReturned=true;
+    const allItemsReturned = order.items.every(item => item.isReturned);
+    order.status = allItemsReturned ? "returned" : "itemsReturned";
 
+    await order.save();
+     
     // Refund the stock
-    for (const item of order.items) {
+    
         
       const product = await Book.findById(item.productId);
       if (!product) {
-        throw new Error(`Product with ID ${item.productId} not found`);
+       return res.status(404).json({success:false,message:`Product with ID ${item.productId} not found` });
       }
       product.stock += item.quantity;
       await product.save();
-    }
+    
     let wallet=await Wallet.findOne({userId:order.userId})
     if(!wallet){
        wallet=new Wallet({
@@ -801,10 +849,16 @@ const acceptReturn = async (req, res) => {
        })
     }
     
+    const remainingItems = order.items.filter(item => !item.isReturned); 
+    const updatedSubtotal = remainingItems.reduce((sum, item) => sum + item.priceAtOrder * item.quantity, 0);
+    const updatedTotal= Math.max(0, updatedSubtotal + order.shipping -order.discount)
+    const refundAmount = item.priceAtOrder * item.quantity 
+    order.subtotal=updatedSubtotal
+    order.total=updatedTotal;
 
-    wallet.balance+=order.total;
+    wallet.balance+=refundAmount;
     wallet.transactions.push({
-        amount:order.total,
+        amount:refundAmount,
         transactionType:'credit',
         date:new Date(),
         orderId:order._id,
@@ -825,21 +879,23 @@ const acceptReturn = async (req, res) => {
 const rejectReturn = async (req, res) => {
   try {
     const { orderId } = req.params;
+    const {itemId}=req.body
 
     // Find the order
-    const order = await Order.findById(orderId);
+    const order = await Order.findById(orderId).populate('items.productId');
     if (!order) {
       return res.status(404).json({ success: false, message: "Order not found" });
     }
 
-    // Validate order status
-    if (order.status !== "returnRequested") {
-      return res.status(400).json({ success: false, message: "Return request is not valid" });
-    }
+     const item = order.items.find(item => item._id.toString() === itemId);
+        if (!item) return res.status(404).json({ success: false, message: "item not found" })
+        if (item.returnStatus !== 'requested') return res.status(400).json({ success: false, message: "return req is not valide" });
+
+    
 
     // Update the order status
     order.status = "delivered";
-    order.returnStatus = "rejected";
+    item.returnStatus = "rejected";
     order.updatedAt = new Date();
     await order.save();
 
@@ -876,7 +932,7 @@ module.exports = {
 
 
 
-
+;
 
 
 

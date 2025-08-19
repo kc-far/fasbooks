@@ -285,7 +285,7 @@ const getProducts = async (req, res) => {
     try {
         const { sort, category, search, page = 1 } = req.query;
         const filter = { isActive: true }; // Only show active products
-        const limit = 3;
+        const limit = 6;
         const skip = (page - 1) * limit;
         const userId = req.session.user.id; // Assuming userId is stored in the session
 
@@ -381,11 +381,14 @@ const getProductDetail = async (req, res) => {
         }
 
 
-        const products = await Book.find({ isActive: true });
+        const products = await Book.find({ categoryId:product.categoryId._id,
+                       _id:{$ne:productId}, isActive: true });
+       console.log('relatedProducts are...',products)
 
         res.render('user/product-detail', { 
             product,//: productWithOffer, 
             products });
+
     } catch (error) {
         console.error(error);
         res.status(500).render('404', { message: 'Server error' });

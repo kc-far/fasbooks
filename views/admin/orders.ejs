@@ -40,7 +40,7 @@
                                             <tr>
                                                 <th>Sl. No</th>
                                                 <th>Order ID</th>
-                                                <th>Customer Name</th>
+                                                <th>Customer</th>
                                                 <th>Product</th>
                                                 <th>Quantity</th>
 
@@ -69,7 +69,7 @@
                                                         </td>
                                                         <td>
                                                         
-                                                            <% if (order.status !=='cancelled'&& order.status !=='returned' && order.status !=='returnRequested') { %>
+                                                            <% if (!order.items.some(item => item.returnStatus === 'requested')) { %>
                                                                 <!-- Show order status form if no item has a return request -->
                                                                 <form action="/admin/orders/<%= order._id %>/status" method="POST" class="order-status-form">
                                                                     <input type="hidden" name="_method" value="PUT">

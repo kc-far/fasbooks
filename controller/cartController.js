@@ -239,7 +239,6 @@ const updateCart = async (req, res) => {
 
 const addToCartFromWishlist = async (req, res) => {
     
-
     try {
         const { productId } = req.body;
         const userId = req.session.user.id;
@@ -280,7 +279,7 @@ const addToCartFromWishlist = async (req, res) => {
 
 
         // Redirect to the wishlist page or send a success response
-        res.redirect('/wishlist');
+       res.json({ success: true, message: "Product added to cart" });
     } catch (error) {
         console.error(error);
         res.status(500).json({ success: false, message: 'Error moving item to cart' });
