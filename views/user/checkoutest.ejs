@@ -173,12 +173,21 @@
                     type="radio"
                     name="paymentMethod"
                     id="cashOnDelivery"
-                    value="cod"
+                    value="cashOnDelivery"
                     required
                 />
                 <label class="form-check-label" for="cashOnDelivery">Cash on Delivery</label>
             </div>
-            
+             <div class="form-check">
+                <input
+                    class="form-check-input"
+                    type="radio"
+                    name="paymentMethod"
+                    id="razorpay"
+                    value="razorpay"
+                    required />
+                <label class="form-check-label" for="razorpay">Pay with Razorpay</label>
+            </div>
             
     
         </div>
@@ -279,7 +288,7 @@ document.addEventListener("DOMContentLoaded", function () {
     
             if (total > 1000) {
                 // Disable the COD option
-                console.log("Total is greater than 1000, disabling COD option.");
+                
                 codOption.disabled = true;
                 // Show SweetAlert notification
                 Swal.fire({
@@ -354,8 +363,159 @@ function clearSelectedAddressInputs() {
     // Run the update total function on page load
     document.addEventListener('DOMContentLoaded', updateTotal);
 </script>
+<script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+<script>
+    async function  handlePayment(e) {
+    e.preventDefault();
+    console.log("going to here");
+    
+    // Collect form data as a FormData object
+    let formData = new FormData(document.querySelector("#checkoutForm"));
 
+    // Convert FormData to a plain object and add paymentMethod
+    let formDataObject = Object.fromEntries(formData.entries());
+    const selectedPaymentMethod = document.querySelector('input[name="paymentMethod"]:checked').value;
+    formDataObject.paymentMethod = selectedPaymentMethod;
+    console.log('formdata',formDataObject);
+    
+    if (selectedPaymentMethod === 'razorpay') {
+        try {
+            // Send form data as JSON to the server to create the order
+            const response = await fetch('/checkout', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(formDataObject),
+            });
 
+            if (!response.ok) {
+                const errorMessage = await response.text();
+                throw new Error(errorMessage || 'Failed to create order');
+            }
+
+            const data = await response.json();
+
+            // Configure Razorpay options
+            const options = {
+                key: 'rzp_test_a2OtfvMdRVJCmD', // Replace with your Razorpay key
+                amount: data.amount, // Amount from backend in the smallest currency unit
+                currency: data.currency,
+                name: 'Your Company Name',
+                description: 'Order Payment',
+                order_id: data.orderId, // Order ID from backend
+                handler: async function (response) {
+                    try {
+                        // Verify the payment on the server
+                        const verifyResponse = await fetch('/verify-razorpay-payment', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                            },
+                            body: JSON.stringify({
+                                razorpay_order_id: response.razorpay_order_id,
+                                razorpay_payment_id: response.razorpay_payment_id,
+                                razorpay_signature: response.razorpay_signature,
+                            }),
+                        });
+
+                        const verificationData = await verifyResponse.json();
+                        if (verifyResponse.ok) {
+                            const orderId = verificationData.orderId; // Adjust this line based on your backend response structure
+                            window.location.href = `/success?orderId=${orderId}`; // Include the order ID in the redirect URL
+                        } else {
+                            Swal.fire({
+                                icon: 'error',
+                                title: 'Payment Verification Failed',
+                                text: 'Please contact support for assistance.',
+                            });
+                            console.error('Payment verification failed:', verificationData);
+                            window.location.href = '/failed';
+                        }
+                    } catch (error) {
+                        console.error('Error during payment verification:', error);
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Error',
+                            text: 'An error occurred while verifying your payment.',
+                        });
+                        window.location.href = '/failed';
+                    }
+                },
+                theme: {
+                    color: '#F37254', // Customize your theme color
+                }
+            };
+
+            // Open Razorpay payment modal
+            const rzp = new Razorpay(options);
+
+            rzp.on('payment.failed', function (response) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Payment Failed',
+                    text: 'Please try again or use a different method.',
+                });
+                console.error('Payment failed:', response.error);
+                window.location.href = '/failed';
+            });
+
+            rzp.open();
+
+        } catch (error) {
+            console.error('Error during Razorpay checkout:', error);
+            Swal.fire({
+                icon: 'error',
+                title: 'Error',
+                text: 'An error occurred while processing your payment. Please try again.',
+            });
+            window.location.href = '/failed';
+        }
+    } else {
+        // Handle non-Razorpay payment methods
+        try {
+    const response = await fetch('/checkout', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(formDataObject),
+    });
+
+    if (!response.ok) {
+        const errorMessage = await response.text(); // Get detailed error message from backend
+        throw new Error(errorMessage || 'Failed to process non-Razorpay payment');
+    }
+
+    const data = await response.json(); // Assuming the backend sends back the order ID in the response
+    const orderId = data.orderId; // Adjust this line based on your backend response structure
+
+    // Redirect to success page with order ID
+    window.location.href = `/success?orderId=${orderId}`;
+} catch (error) {
+    console.error('Error during non-Razorpay payment processing:', error);
+
+    // Handle specific error messages
+    let errorMessage = 'An error occurred while processing your payment. Please try again.';
+    if (error.message.includes('Insufficient wallet balance')) {
+        errorMessage = 'Your wallet balance is insufficient to complete this payment.';
+    } else if (error.message.includes('Network error')) {
+        errorMessage = 'A network error occurred. Please check your internet connection and try again.';
+    } else if (error.message.includes('Server error')) {
+        errorMessage = 'A server error occurred. Please try again later.';
+    }
+
+    // Display the appropriate error message to the user
+    Swal.fire({
+        icon: 'error',
+        title: 'Error',
+        text: errorMessage,
+    });
+}
+
+    }
+}
+</script>
 
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <!-- SweetAlert JS -->

@@ -152,7 +152,7 @@ ul.timeline > li.active:before {
             padding: 10px 0px !important;
             min-width: 95% !important;
             height: 700px;
-            overflow: scroll;
+            
         }
         .close {
             margin-right: 10px;
@@ -201,11 +201,7 @@ h1, h2, h3, h4, h5, h6, p {
             padding: 0;
         }
 
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 20px;
-        }
+        
 
         .card {
             border-radius: 10px;
@@ -229,16 +225,7 @@ h1, h2, h3, h4, h5, h6, p {
         }
 
 /* Optional: Style the scrollbar */
-        #addressList::-webkit-scrollbar {
-            width: 8px;
-        }
-        #addressList::-webkit-scrollbar-thumb {
-            background: #888;
-            border-radius: 5px;
-        }
-        #addressList::-webkit-scrollbar-thumb:hover {
-            background: #555;
-        }
+      
 
         .address {
             border: 1px solid #ddd;
@@ -302,7 +289,7 @@ h1, h2, h3, h4, h5, h6, p {
 
         .modal-content {
             background-color: #fff;
-            margin: 5% auto;
+            margin: 10% auto;
             padding: 20px;
             border-radius: 8px;
             width: 60%;
@@ -321,7 +308,7 @@ h1, h2, h3, h4, h5, h6, p {
 
         .close:hover,
         .close:focus {
-            color: #000;
+            color:black                                                                                                                                                                                                                                                                                                                                                                                                                                                                   ;
             text-decoration: none;
             cursor: pointer;
         }
