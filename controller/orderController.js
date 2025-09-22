@@ -4,6 +4,9 @@ const Book = require("../models/productModel");
 const mongoose = require("mongoose");
 const User = require("../models/userModel");
 const Order = require("../models/orderModel");
+const Coupon = require('../models/couponModel');
+const Offer = require('../models/offerModel')
+const Wallet =require('../models/walletModel')
 const crypto = require("crypto");
 const PDFDocument = require('pdfkit');
 const Razorpay = require("razorpay");
@@ -19,24 +22,29 @@ const processCheckout = async (req, res) => {
   console.log("checkout controll worki ng")
     const userId = req.session.user.id;
     const addressId = req.body.addressId;
-  console.log(1)
+  
     if (!userId) {
         return res.status(401).send('User not authenticated');
     }
-console.log(2)
+
     try {
       console.log(3)
         const cart = await Cart.findOne({ userId }).populate('items.productId');
         if (!cart || cart.items.length === 0) {
             return res.status(400).send('No items in the cart');
         }
-console.log(4)
+
         let subtotal = 0;
+        let offerDiscount = 0;
         const itemsToProcess = [];
 
         const currentDate = new Date();
-        
-console.log(5)
+        const offers = await Offer.find({
+            isActive: true,
+            validFrom: { $lte: currentDate },
+            validUntil: { $gte: currentDate }
+        });
+
         for (let item of cart.items) {
           console.log("if for loop")
             const product = item.productId;
@@ -50,6 +58,17 @@ console.log(5)
 
             subtotal += product.price * item.quantity;
            console.log("product detail:",product.price,subtotal)
+           for (let offer of offers) {
+                const applicableProducts = offer.applicableProducts.map(id => id.toString());
+                const applicableCategories = offer.applicableCategories.map(id => id.toString());
+
+                if (
+                    applicableProducts.includes(product._id.toString()) || 
+                    applicableCategories.includes(product.categoryId.toString())
+                ) {
+                    offerDiscount += (product.price * item.quantity * offer.discount) / 100;
+                }
+            }
             itemsToProcess.push({
                 productId: product._id,
                 quantity: item.quantity,
@@ -64,9 +83,28 @@ console.log(5)
             }
             
         }
-console.log(6)
+
+
+        let couponDiscount = 0
+        if (req.body.couponCode){
+           const coupon = await Coupon.findOne({ code: req.body.couponCode, isActive: true })
+           if (coupon && currentDate >= coupon.validFrom && currentDate <= coupon.validUntil && subtotal >= coupon.minOrderValue){
+               couponDiscount = (subtotal * coupon.discount) / 100;
+
+               if (coupon.maxDiscountLimit && couponDiscount > coupon.maxDiscountLimit) {
+                  couponDiscount = coupon.maxDiscountLimit;
+                }
+
+               if (couponDiscount > subtotal / 2) {
+                  couponDiscount = subtotal / 2;
+                }
+           }
+        }
+
+
+
               
-        const totalDiscount=0
+        const totalDiscount=offerDiscount+ couponDiscount;
         const shippingCost = subtotal > 1000 ? 0 : 99;
         const total = subtotal - totalDiscount + shippingCost;
 
@@ -214,12 +252,37 @@ const getCartItems = async (req, res) => {
             : res.render('user/cart', { stockError: true, outOfStockItems:[],errorMessage:null})
         }
       const cartTotal = Math.round(
-      cart.items.reduce(
-        (total, item) => total + item.productId.price * item.quantity,
-        0
-      )
-    );
+                             cart.items.reduce(
+                                 (total, item) => total + item.productId.price * item.quantity,0)
+      );
+      // **Apply Offer Logic**
+        let offerDiscount = 0;
+        const currentDate = new Date();
+        const offers = await Offer.find({
+            isActive: true,
+            validFrom: { $lte: currentDate },
+            validUntil: { $gte: currentDate },
+        });
 
+        for (let offer of offers) {
+            const applicableProducts = offer.applicableProducts.map((id) => id.toString());
+            const applicableCategories = offer.applicableCategories.map((id) => id.toString());
+            for (let item of cart.items) {
+                const product = item.productId;
+
+                if (
+                    applicableProducts.includes(product._id.toString()) ||
+                    applicableCategories.includes(product.categoryId.toString())
+                ) {
+                    offerDiscount += (product.price * item.quantity * offer.discount) / 100;
+                }
+            }
+        }
+        //const additionalFee = cartTotal < 1000 ? 99 : 0;
+        const total = cartTotal - offerDiscount //+ additionalFee;
+
+      
+  
     const userAddresses = await Address.findOne({ userId });
     const addresses = userAddresses ? userAddresses.addresses : [];
         const items = cart.items.map(item => {
@@ -239,11 +302,13 @@ const getCartItems = async (req, res) => {
                 errorMessage: null,
                 userId,
                 cartTotal,
-                addresses
+                offerDiscount,
+                addresses,
+                total
 
             });
         }else{
-          res.render('user/checkout', { items,errorMessage:null,cartTotal,userId,addresses });
+          res.render('user/checkout', { items,errorMessage:null,cartTotal,offerDiscount,total,userId,addresses });
         }
         
     } catch (error) {
@@ -251,7 +316,62 @@ const getCartItems = async (req, res) => {
         res.status(500).send('Error fetching cart');
     }
 };
+const validateCoupon = async (req, res) => {
+    const { couponCode, subtotal } = req.body;
+    try {
+        const coupon = await Coupon.findOne({ code: couponCode, isActive: true });
 
+        if (!coupon) {
+            return res.status(400).json({ message: 'Invalid or expired coupon' });
+        }
+
+        const currentDate = new Date();
+        if (currentDate < coupon.validFrom || currentDate > coupon.validUntil) {
+            return res.status(400).json({ message: 'Coupon is not valid at this time' });
+        }
+
+        if (subtotal < coupon.minOrderValue) {
+            return res.status(400).json({ message: `Minimum order value for this coupon is ₹${coupon.minOrderValue}` });
+        }
+
+        // Calculate discount
+        let discount = (subtotal * coupon.discount) / 100;
+
+        // Apply max discount limit
+        if (coupon.maxDiscountLimit && discount > coupon.maxDiscountLimit) {
+            discount = coupon.maxDiscountLimit;
+        }
+      
+
+        let discountedTotal=subtotal-discount
+        discountedTotal=Math.round(discountedTotal)
+
+        res.json({ discountedTotal, discount, message: 'Coupon applied successfully' });
+    } catch (error) {
+        console.error('Error validating coupon:', error);
+        res.status(500).json({ message: 'Internal server error' });
+    }
+}
+const getAvailableCoupons = async (req, res) => {
+    try {
+        const coupons = await Coupon.find({ isActive: true });
+
+        if (!coupons || coupons.length === 0) {
+            return res.status(404).json({ message: 'No coupons available' });
+        }
+
+        // Map required fields only (e.g., code and description)
+        const availableCoupons = coupons.map(coupon => ({
+            code: coupon.code,
+            description: `${coupon.discount}% OFF - Min Order ₹${coupon.minOrderValue}`
+        }));
+
+        res.json({ coupons: availableCoupons });
+    } catch (error) {
+        console.error('Error fetching coupons:', error);
+        res.status(500).json({ message: 'Internal server error' });
+    }
+};
 //add new address
 const addNewAddress = async (req, res) => {
   
@@ -627,15 +747,21 @@ const cancelItem=async (req,res)=>{
           await Book.findByIdAndUpdate(productId,{
             $inc:{stock:cancelItem.quantity}
           })
+          const originalSubtotal = order.items.reduce((sum, item) => sum + item.priceAtOrder * item.quantity, 0);
+          const originalDiscount = order.discount || 0;
+          const discountPercentage = originalDiscount / originalSubtotal;
+
         const subtotalUpdate=order.items.reduce((sum,item)=>{
           if(!item.isCancelled){
             return sum+=item.priceAtOrder*item.quantity;
           }
           return sum
         },0)
-        const totalUpdate=Math.max(0,subtotalUpdate+order.shipping-order.discount)
+        const updatedDiscount = subtotalUpdate * discountPercentage;
+        const totalUpdate=Math.max(0,subtotalUpdate+order.shipping-order.updatedDiscount)
 
         order.subtotal=subtotalUpdate
+        order.discount = updatedDiscount
         order.total=totalUpdate
 
         if(order.items.every(item=>item.isCancelled)){
@@ -645,6 +771,27 @@ const cancelItem=async (req,res)=>{
         }
          
          await order.save();
+
+         if (order.paymentMethod !== 'cashOnDelivery') {
+                const itemDiscount = (cancelItem.priceAtOrder * cancelItem.quantity / originalSubtotal) * originalDiscount;
+                const refundAmount = cancelItem.priceAtOrder * cancelItem.quantity - itemDiscount;
+
+                let wallet = await Wallet.findOne({ userId: order.userId });
+                if (!wallet) {
+                    wallet = await Wallet.create({ userId: order.userId });
+                }
+
+                wallet.balance += refundAmount;
+                wallet.transactions.push({
+                    amount: refundAmount,
+                    transactionType: 'credit',
+                    orderId: orderId,
+                    message: `Credited for canceled product '${cancelItem.titleAtOrder}'`
+                });
+
+                await wallet.save();
+            }
+
           return res.json({ success: true, message:'order cancelled successfully'})
      }catch(err){
         console.error(err);
@@ -827,6 +974,8 @@ const generateInvoicePDF = async (
 module.exports = {
   processCheckout,
   renderCheckout,
+  validateCoupon,
+  getAvailableCoupons,
   addNewAddress,
   cancelOrder,
   returnOrder,

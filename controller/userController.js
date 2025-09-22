@@ -15,6 +15,7 @@ const sendOtpToEmail = require('../config/sendOtpToEmail');
 const Wishlist = require('../models/wishListModel')
 const Wallet=require('../models/walletModel')
 const Cart = require('../models/cartModel')
+const Offer = require('../models/offerModel')
 
 const renderSignupPage =  (req, res) => {
     res.render('user/signup', { error: null, message: null });
@@ -70,14 +71,26 @@ const userSignup = async (req, res) => {
 
             wallet.balance += 150; // Add referral bonus to the wallet
             wallet.transactions.push({
-                amount: 100,
+                amount: 150,
                 transactionType: 'credit',
                 message: 'Referral bonus credited for referring a new user.',
             });
 
             await wallet.save();
-            
+
+            req.session.tempUserWallet={
+            balance:75,
+            transactions:[{
+                amount:75,
+                transactionType:'credit',
+                message:'Sign-up bonus credited for using a referral code.'
+
+            }],
+          }
+        }else{
+            req.session.tempUserWallet = null;
         }
+        
 
         // Save temp user in session for OTP verification
         req.session.tempUser = { name, email, password, referredBy };
@@ -128,12 +141,23 @@ const verifyOtp = async (req, res) => {
     }
 
     
-    const { name, email, password } = req.session.tempUser; 
+    const { name, email, password ,referredBy} = req.session.tempUser; 
 
-    const user = new User({ name, email, password }); 
+    const user = new User({ name, email, password ,referredBy}); 
     await user.save(); 
+    if(referredBy){
+        let newUserWallet=await Wallet.findOne({userId:user._id})
+        if(!newUserWallet){
+            newUserWallet=new Wallet({userId:user._id})
+        }
+        newUserWallet.balance+=req.session.tempUserWallet.balance
+        newUserWallet.transactions.push(...req.session.tempUserWallet.transactions)
+        await newUserWallet.save()
+
+    }
 
     delete req.session.tempUser;
+    delete req.session.tempUserWallet;
     delete req.session.otp;
     delete req.session.otpExpires;
 
@@ -236,7 +260,37 @@ const getHome = async (req, res) => {
         // Fetch active products and populate their category
         const products = await Book.find({ isActive: true }).populate('categoryId', 'name');
         const wallet=await Wallet.find({userId});
+
+        const offers = await Offer.find({ isActive: true });
+
         const currentDate = new Date(); // Get the current date
+
+        const productsWithOffers = products.map(product => {
+            let maxDiscountedPrice = product.price; // Start with the original price
+            let hasDiscount = false;
+        
+            offers.forEach(offer => {
+                const isOfferActive = !offer.validUntil || offer.validUntil > currentDate; // Check if the offer is still valid
+                const isProductEligible = offer.applicableProducts.some(id => id.equals(product._id)); // Check if product ID is in applicableProducts
+                const isCategoryEligible = offer.applicableCategories.some(id => id.equals(product.categoryId?._id)); // Check if category ID is in applicableCategories
+        
+                if (isOfferActive && (isProductEligible || isCategoryEligible)) {
+                    const calculatedDiscountedPrice = product.price - (product.price * (offer.discount / 100));
+        
+                    // Update maxDiscountedPrice if a better discount is found
+                    if (calculatedDiscountedPrice < maxDiscountedPrice) {
+                        maxDiscountedPrice = calculatedDiscountedPrice;
+                        hasDiscount = true;
+                    }
+                }
+            });
+        
+            return {
+                ...product.toObject(),
+                discountedPrice: maxDiscountedPrice, // Final discounted price (if applicable)
+                hasDiscount // Indicates if any discount was applied
+            };
+        });
         
         // Fetch distinct active categories
         const categories = await Category.find({ isActive: true });
@@ -247,7 +301,7 @@ const getHome = async (req, res) => {
 
         // Render the page and pass categories, products with offers, and wishlist status to the view
         res.render('user/home', { 
-            products,//: productsWithOffers, 
+            products: productsWithOffers, 
             userId, 
             categories, 
             wallet, 
@@ -326,7 +380,7 @@ const getProducts = async (req, res) => {
                 break;
         }
 
-        //const offers = await Offer.find({ isActive: true });
+        const offers = await Offer.find({ isActive: true });
 
         const [products, totalProducts] = await Promise.all([
             Book.find(filter).sort(sortCriteria).skip(skip).limit(limit).populate('categoryId', 'name'),
@@ -336,17 +390,43 @@ const getProducts = async (req, res) => {
         const totalPages = Math.ceil(totalProducts / limit);
 
         const currentDate = new Date();
+        const productsWithOffers = products.map(product => {
+            let maxDiscountedPrice = product.price; // Start with the original price
+            let hasDiscount = false;
+
+            offers.forEach(offer => {
+                const isOfferActive = !offer.validUntil || offer.validUntil > currentDate; // Check if the offer is still valid
+                const isProductEligible = offer.applicableProducts.some(id => id.equals(product._id)); // Check if product ID is in applicableProducts
+                const isCategoryEligible = offer.applicableCategories.some(id => id.equals(product.categoryId?._id)); // Check if category ID is in applicableCategories
+
+                if (isOfferActive && (isProductEligible || isCategoryEligible)) {
+                    const calculatedDiscountedPrice = product.price - (product.price * (offer.discount / 100));
+
+                    if (calculatedDiscountedPrice < maxDiscountedPrice) {
+                        maxDiscountedPrice = calculatedDiscountedPrice;
+                        hasDiscount = true;
+                    }
+                }
+            });
+
+            return {
+                ...product.toObject(),
+                discountedPrice: maxDiscountedPrice, // Final discounted price (if applicable)
+                hasDiscount // Indicates if any discount was applied
+            };
+        });
+
         
         if (req.xhr) {
             return res.json({
-                products,//: productsWithOffers,
+                products: productsWithOffers,
                 totalPages,
                 currentPage: Number(page)
             });
         }
 
         res.render('user/products', {
-            products,//: productsWithOffers, // Pass updated products with discount info
+            products: productsWithOffers, // Pass updated products with discount info
             categories: await Category.find({ isActive: true }),
             currentPage: page,
             totalPages,
@@ -380,13 +460,30 @@ const getProductDetail = async (req, res) => {
             return res.status(404).render('404', { message: 'Product not found' });
         }
 
+        const offers = await Offer.find({ isActive: true });
 
+        let discountedPrice = null;
+
+        offers.forEach(offer => {
+            const isProductEligible = offer.applicableProducts.includes(product._id);
+            const isCategoryEligible = offer.applicableCategories.includes(product.categoryId?.name);
+
+            if (isProductEligible || isCategoryEligible) {
+                discountedPrice = product.price - (product.price * (offer.discount / 100));
+            }
+        });
+
+        const productWithOffer = {
+            ...product.toObject(),
+            discountedPrice: discountedPrice || product.price,
+            hasDiscount: !!discountedPrice
+        };
         const products = await Book.find({ categoryId:product.categoryId._id,
                        _id:{$ne:productId}, isActive: true });
        console.log('relatedProducts are...',products)
 
         res.render('user/product-detail', { 
-            product,//: productWithOffer, 
+            product: productWithOffer, 
             products });
 
     } catch (error) {
@@ -912,7 +1009,7 @@ const getWallet = async (req, res) => {
         
         const userId = req.session.user.id;
         const page = parseInt(req.query.page) || 1;
-        const limit = 10;
+        const limit = 4;
         const skip = (page - 1) * limit;
 
         const wallet = await Wallet.findOne({ userId });

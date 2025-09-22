@@ -74,6 +74,8 @@ router.post('/checkout', userAuth.checkSession, orderController.processCheckout)
 router.get('/checkout', userAuth.checkSession, orderController.getCartItems);
 router.post('/addNewAddress', userAuth.checkSession, orderController.addNewAddress);
 
+router.post('/validateCoupon',userAuth.checkSession,orderController.validateCoupon)
+router.get('/getAvailableCoupons',userAuth.checkSession,orderController.getAvailableCoupons)
  // Payment
  //router.post('/checkoutCOD', userAuth.checkSession, orderController.placeCODOrder);
  router.post('/verify-razorpay-payment',userAuth.checkSession, orderController.verifyPayment);

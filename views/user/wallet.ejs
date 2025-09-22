@@ -349,7 +349,7 @@
                             <div class="transaction-type"><%= txn.transactionType.charAt(0).toUpperCase() + txn.transactionType.slice(1) %></div>
                             <div class="transaction-date"><%= new Date(txn.date).toLocaleString() %></div>
                             <% if (txn.transactionType === 'credit' && txn.message) { %>
-                                <div class="transaction-note">Note: <%= txn.message %></div>
+                                <div class="transaction-note"> <span class="transaction-amount">₹<%= Math.abs(txn.amount).toFixed(2) %></span> <%= txn.message %></div>
                             <% } %>
                         </div>
                         <div class="transaction-amount"><%= txn.transactionType === 'credit' ? '+' : '-' %>₹<%= Math.abs(txn.amount).toFixed(2) %></div>

@@ -279,11 +279,14 @@ checkoutForm.addEventListener('submit', async (event) => {
                         const increaseButton = document.querySelector(`button[data-product-id="${productId}"][data-action="increase"]`);
                         if (increaseButton) {
                             increaseButton.disabled = data.quantity >= 5;
-                            Swal.fire({
-                                icon:'warning',
-                                title:'Limit reached',
-                                message:data.message
-                            })
+                            if (data.quantity >= 5){
+                                Swal.fire({
+                                   icon:'warning',
+                                   title:'Limit reached',
+                                   message:data.message
+                                })
+                            }
+                            
                         }
                     } else {
                         Swal.fire('Oops!', data.message, 'error');
