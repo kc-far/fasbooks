@@ -74,6 +74,7 @@
                 <div class="mb-3">
                     <label for="name" class="form-label">Name</label>
                     <input type="text" class="form-control" id="name" name="name" placeholder="Enter your full name">
+                    
                 </div>
                 <div class="mb-3">
                     <label for="email" class="form-label">Email</label>
@@ -91,7 +92,7 @@
                     <label for="referralCode" class="form-label">Referral Code (Optional)</label>
                     <input type="text" class="form-control" id="referralCode" name="referralCode" placeholder="Enter referral code">
                 </div>
-                <button type="submit" class="btn btn-primary w-100" id="signupBtn" disabled>Sign up</button>
+                <button type="submit" class="btn btn-primary w-100" id="signupBtn" >Sign up</button>
                 <p class="text-center mt-3">Already have an account? <a href="/login" class="text-decoration-none">Login</a></p>
             </form>
             
@@ -109,7 +110,7 @@
                 const password = document.getElementById('password').value.trim();
                 const confirmPassword = document.getElementById('confirmPassword').value.trim();
     
-                signupBtn.disabled = !(name && email && password && confirmPassword);
+               
             }
     
             const inputs = signupForm.querySelectorAll('input');

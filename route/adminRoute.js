@@ -40,14 +40,30 @@ router.post('/activeBook',adminController.activeBook)
 //
 router.get('/orders',adminAuth.adminAuth,adminController.getOrders)
 router.post('/orders/:id/status',adminAuth.adminAuth, adminController.orderStatus);
-
-router.get('/report',adminAuth.adminAuth,adminController.getDeliveredSalesReport)
-router.route('/downloadSalesReport')
-  .get(adminAuth.adminAuth,adminController.downloadSalesReport)
-  .post(adminAuth.adminAuth,adminController.downloadSalesReport);
-router.post('/filterSalesReport',adminAuth.adminAuth,adminController.filterSalesReport)
+router.get('/returnOrders',adminAuth.adminAuth,adminController.getReturnOrders)
 router.post('/acceptReturn/:orderId',adminAuth.adminAuth, adminController.acceptReturn);
 router.post('/rejectReturn/:orderId', adminAuth.adminAuth,adminController.rejectReturn);
+
+//coupon management
+router.get('/coupons',adminAuth.adminAuth,adminController.getCoupons);
+router.get('/getCreateCoupon',adminAuth.adminAuth,adminController.getCreateCoupon)
+router.post('/create-coupon',adminAuth.adminAuth, adminController.createCoupon);
+router.get('/editCoupon/:id',adminAuth.adminAuth, adminController.getEditCoupon);
+router.post('/editCoupon/:id',adminAuth.adminAuth, adminController.updateCoupon);
+router.post('/deleteCoupon/:id',adminAuth.adminAuth,adminController.deactivateCoupon);
+
+//offer management
+router.get('/offer-management',adminAuth.adminAuth,adminController.getOffers)
+router.get('/getCreateOffer',adminAuth.adminAuth,adminController.getCreateOffer)
+router.post('/createOffer',adminAuth.adminAuth, adminController.createOffer)
+router.get('/editOffer/:offerId',adminAuth.adminAuth, adminController.getEditOffer)
+router.post('/updateOffer/:offerId',adminAuth.adminAuth, adminController.editOffer)
+router.post('/toggleOfferStatus/:offerId',adminAuth.adminAuth, adminController.deactivateOffer)
+
+router.get('/report', adminAuth.adminAuth, adminController.renderSalesReport);
+router.post('/getSalesReport',adminAuth.adminAuth,adminController.getSalesReport);
+router.get('/downloadSalesReport/excel',adminAuth.adminAuth, adminController.downloadExcel);
+router.get('/downloadSalesReport/pdf',adminAuth.adminAuth, adminController.downloadPdf);
 
 
 module.exports = router

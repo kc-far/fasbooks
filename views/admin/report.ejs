@@ -11,207 +11,279 @@
     <link rel="stylesheet" href="/assets/vendors/mdi/css/materialdesignicons.min.css">
     <link rel="stylesheet" href="/assets/vendors/css/vendor.bundle.base.css">
     <link rel="stylesheet" href="/assets/css/style.css">
+
+    <link rel="stylesheet" href="/css/report.css">
 </head>
+
 
 <body>
     <div class="container-scroller">
-        <%- include('partials/sidebar') %>
-        <%- include('partials/navbar') %>
+        <%-include('partials/navbar.ejs')%>
+        <%-include('partials/sidebar.ejs')%>
 
-        <div class="container-fluid page-body-wrapper">
-            <div class="main-panel">
-                <div class="content-wrapper">
-                    <div class="row">
-                        <div class="col-12 grid-margin">
-                            <div class="card">
-                                <div class="card-body">
-                                    <div class="d-flex justify-content-between align-items-center mb-4">
-                                        <h4 class="card-title">Sales Report</h4>
-                                        <button class="btn btn-primary mb-4" style="width: 200px;" data-bs-toggle="modal" data-bs-target="#dateRangeModal">
-                                            Filter Report
-                                        </button>
-                                        <button class="btn btn-primary mb-4" onclick="downloadReportAsPDF()">Download PDF</button>
-                                        
-                                        <!-- Date Range Modal -->
-                                        <div class="modal fade" id="dateRangeModal" tabindex="-1" aria-labelledby="dateRangeModalLabel" aria-hidden="true">
-                                            <div class="modal-dialog">
-                                                <div class="modal-content">
-                                                    <div class="modal-header">
-                                                        <h5 class="modal-title" id="dateRangeModalLabel">Select Date Range</h5>
-                                                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                                                    </div>
-                                                    <div class="modal-body">
-                                                        <label for="dateRange" class="form-label">Choose a Date Range:</label>
-                                                        <select id="dateRange" class="form-select" onchange="toggleCustomDateFields()">
-                                                            <option value="daily">Today</option>
-                                                            <option value="weekly">Last Week</option>
-                                                            <option value="monthly">Last Month</option>
-                                                            <option value="custom">Custom Date Range</option>
-                                                        </select>
-                                                        
-                                                        <!-- Custom Date Range -->
-                                                        <div id="customDateRangeFields" class="mt-3 d-none">
-                                                            <label for="startDate" class="form-label">Start Date:</label>
-                                                            <input type="date" id="startDate" class="form-control">
-                                                            
-                                                            <label for="endDate" class="form-label mt-2">End Date:</label>
-                                                            <input type="date" id="endDate" class="form-control">
-                                                        </div>
-                                                    </div>
-                                                    <div class="modal-footer">
-                                                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                                                        <button type="button" class="btn btn-primary" onclick="generateSalesReport()">Apply Filter</button>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
-        
-                                        <script>
-                                        let requestBody = {}; // Variable to store the filter data for download
-        
-                                        function toggleCustomDateFields() {
-                                            const dateRange = document.getElementById('dateRange').value;
-                                            const customFields = document.getElementById('customDateRangeFields');
-                                            customFields.classList.toggle('d-none', dateRange !== 'custom');
-                                        }
-        
-                                        async function generateSalesReport() {
-                                            const dateRange = document.getElementById('dateRange').value;
-                                            let reportType, startDate, endDate;
-        
-                                            switch (dateRange) {
-                                                case 'daily':
-                                                    reportType = 'daily';
-                                                    break;
-                                                case 'weekly':
-                                                    reportType = 'weekly';
-                                                    break;
-                                                case 'monthly':
-                                                    reportType = 'monthly';
-                                                    break;
-                                                case 'custom':
-                                                    startDate = document.getElementById('startDate').value;
-                                                    endDate = document.getElementById('endDate').value;
-                                                    if (!startDate || !endDate) {
-                                                        alert('Please select both start and end dates.');
-                                                        return;
-                                                    }
-                                                    reportType = 'custom';
-                                                    break;
-                                                default:
-                                                    alert('Please select a valid date range.');
-                                                    return;
-                                            }
-        
-                                            requestBody = { reportType, ...(reportType === 'custom' && { startDate, endDate }) };
-        
-                                            // Fetch filtered data for table display
-                                            try {
-                                                const response = await fetch('/admin/filterSalesReport', {
-                                                    method: 'POST',
-                                                    headers: { 'Content-Type': 'application/json' },
-                                                    body: JSON.stringify(requestBody)
-                                                });
-                                                
-                                                if (!response.ok) throw new Error(`Response status: ${response.status}`);
-        
-                                                const salesData = await response.json();
-        
-                                                // Populate the table with filtered data
-                                                const tableBody = document.getElementById('salesReportTableBody');
-                                                tableBody.innerHTML = salesData.length ? salesData.map(report => `
-                                                    <tr>
-                                                        <td>${report.OrderId}</td>
-                                                        <td>${report.userId.name}</td>
-                                                        <td>₹${report.total.toFixed(2)}</td>
-                                                        <td>${report.deliveredAt ? new Date(report.deliveredAt).toLocaleDateString() : 'N/A'}</td>
-                                                        <td><div class="badge ${getStatusBadgeClass(report.status)}">${report.status}</div></td>
-                                                    </tr>
-                                                `).join('') : '<tr><td colspan="5" class="text-center">No delivered orders available.</td></tr>';
-                                            } catch (error) {
-                                                console.error('Error fetching filtered sales data:', error.message);
-                                                alert('Failed to fetch filtered data. Please try again.');
-                                            }
-                                        }
-        
-                                        // Helper function for setting badge classes based on status
-                                        function getStatusBadgeClass(status) {
-                                            switch (status) {
-                                                case 'pending': return 'badge-warning';
-                                                case 'shipped': return 'badge-info';
-                                                case 'delivered': return 'badge-success';
-                                                default: return 'badge-danger';
-                                            }
-                                        }
-        
-                                        async function downloadReportAsPDF() {
-    try {
-        const response = await fetch('/admin/downloadSalesReport', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(requestBody),
-        });
+  <!-- SweetAlert2 -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
-        if (!response.ok) throw new Error(`Response status: ${response.status}`);
-
-        // Convert response to Blob for PDF download
-        const blob = await response.blob();
-        const url = window.URL.createObjectURL(blob);
-        const link = document.createElement('a');
-        link.href = url;
-        link.setAttribute('download', 'sales_report.pdf');
-        document.body.appendChild(link);
-        link.click();
-        link.remove();
-        window.URL.revokeObjectURL(url);
-    } catch (error) {
-        console.error('Error downloading PDF:', error.message);
-        alert('Failed to download PDF report. Please try again.');
-    }
-}
-
-
-
-                                        </script>
-        
-                                    </div>
-        
-                                    <!-- Sales Report Table -->
-                                    <div class="table-responsive">
-                                        <table class="table">
-                                            <thead>
-                                                <tr>
-                                                    <th>Order ID</th>
-                                                    <th>Customer Name</th>
-                                                    <th>Total Amount</th>
-                                                    <th>Date</th>
-                                                    <th>Status</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody id="salesReportTableBody">
-                                                <!-- Filtered results will be injected here dynamically -->
-                                            </tbody>
-                                        </table>
-                                    </div>
-                                    
-                                    <!-- Pagination Controls -->
-                                    
-                                    
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    <%- include('partials/footer') %>
+<!-- Main content -->
+<div class="h-screen flex-grow-1 overflow-y-lg-auto">
+    <!-- Header -->
+    <header class="bg-surface-primary border-bottom pt-6">
+        <div class="container-fluid">
+            <div class="row align-items-center">
+                <div class="col-sm-6 col-12 mb-4 mb-sm-0">
+                    <h1 class="h2 mb-0 ls-tight"></h1><br>
+                </div>
+                <div class="col-sm-6 col-12 text-sm-end">
+                  
                 </div>
             </div>
         </div>
+    </header>
+
+
+<div class="container">
+    <div class="report-header text-center">
+         <h1>Sales Report</h1>
+    </div>
+
+    <form id="salesReportForm" class="row g-3">
+        <div class="col-md-4">
+            <label for="reportType" class="form-label">Select Report Type</label>
+            <select name="reportType" id="reportType" class="form-select">
+                <option value="daily">Daily</option>
+                <option value="weekly">Weekly</option>
+                <option value="monthly">Monthly</option>
+                <option value="custom">Custom Date Range</option>
+            </select>
+        </div>
+        <div class="col-md-4" id="customDateRange" style="display: none;">
+            <label for="startDate" class="form-label">Start Date</label>
+            <input type="date" name="startDate" id="startDate" class="form-control">
+        </div>
+        <div class="col-md-4" id="customDateRange" style="display: none;">
+            <label for="endDate" class="form-label">End Date</label>
+            <input type="date" name="endDate" id="endDate" class="form-control">
+        </div>
+        <div class="col-md-12">
+            <button type="button" id="generateReport" class="btn btn-primary">Generate Report</button>
+            <button type="button" id="downloadPDF" class="btn btn-danger"><i class="fas fa-file-pdf"></i> Download PDF</button>
+            <button type="button" id="downloadExcel" class="btn btn-success"><i class="fas fa-file-excel"></i> Download Excel</button>
+        </div>
+    </form>
+
+    <div id="reportContainer" class="table-container">
+        <!-- This is where the report will be displayed -->
+    </div>
+</div>
+
+<script>
+    document.getElementById('reportType').addEventListener('change', function() {
+        const customDateRange = document.querySelectorAll('#customDateRange');
+        if (this.value === 'custom') {
+            customDateRange.forEach(element => {
+                element.style.display = 'block';
+            });
+        } else {
+            customDateRange.forEach(element => {
+                element.style.display = 'none';
+            });
+        }
+    });
+
+    document.getElementById('generateReport').addEventListener('click', async () => {
+        const form = document.getElementById('salesReportForm');
+        const reportType = document.getElementById('reportType').value;
         
-        <script src="/assets/vendors/js/vendor.bundle.base.js"></script>
-        <script src="/assets/js/off-canvas.js"></script>
-        <script src="/assets/js/hoverable-collapse.js"></script>
-        <script src="/assets/js/misc.js"></script>
-        <script src="/assets/js/settings.js"></script>
-        <script src="/assets/js/todolist.js"></script>
+        // Prepare data object
+        const reportData = {
+            reportType: reportType
+        };
+       console.log('report type',reportType)
+        // If custom date range is selected, add start and end dates
+        if (reportType === 'custom') {
+            const startDate = document.getElementById('startDate').value;
+            const endDate = document.getElementById('endDate').value;
+
+            // Validate custom date range
+            if (!startDate || !endDate) {
+                alert('Please select both start and end dates for the custom report.');
+                return;
+            }
+
+            // Add start and end dates to the data object
+            reportData.startDate = startDate;
+            reportData.endDate = endDate;
+        }
+
+        try {
+            console.log(11)
+            const response = await fetch('/admin/getSalesReport', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(reportData)
+            });
+console.log(12)
+            if (!response.ok) {
+                console.log(13)
+                throw new Error('Network response was not ok');
+            }
+
+            const data = await response.json();
+console.log(14)
+            // Update the reportContainer with the sales data
+            const reportContainer = document.getElementById('reportContainer');
+            reportContainer.innerHTML = ''; // Clear previous content
+
+            if (data.success) {
+                console.log(15)
+                // Create a table to display the sales data
+                const table = document.createElement('table');
+                table.className = 'table table-striped table-bordered';
+                const headerRow = table.insertRow();
+                headerRow.innerHTML = `
+                    <th>Order ID</th>
+                    <th>Date</th>
+                    <th>Customer</th>
+                    <th>Total Price</th>
+                    
+                    <th>Coupon Discount</th>
+                    <th>Final Amount</th>
+                    <th>Payment Method</th>
+                `;
+
+            
+                console.log(16)
+
+                data.sales.forEach(order => {
+                    console.log(17)
+                    const row = table.insertRow();
+                    
+                    row.innerHTML = `
+                        <td>${order.OrderId}</td>
+                        <td>${new Date(order.createdAt).toLocaleDateString()}</td>
+                        <td>${order.userId ? order.userId.name : 'N/A'}</td>
+                        <td>₹${order.total.toFixed(2)}</td>
+                        
+                        <td>₹${order.discount ? order.discount.toFixed(2) : '0.00'}</td>
+                        <td>₹${order.total.toFixed(2)}</td>
+                        <td>${order.paymentMethod}</td>
+                    `;
+                   console.log(18)
+                });
+
+                reportContainer.appendChild(table);
+console.log(19)
+                // Create summary section
+                const summaryDiv = document.createElement('div');
+                summaryDiv.className = 'mt-4';
+                summaryDiv.innerHTML = `
+                    <h3>Sales Summary</h3>
+                    <div class="row">
+                        <div class="col-md-4">
+                            <p><strong>Total Orders:</strong> ${data.summary.totalOrders}</p>
+                        </div>
+                        <div class="col-md-4">
+                            <p><strong>Total Sales:</strong> ₹${data.summary.totalSales.toFixed(2)}</p>
+                        </div>
+                        <div class="col-md-4">
+                            <p><strong>Total Discount:</strong> ₹${data.summary.totalDiscount.toFixed(2)}</p>
+                        </div>
+                    </div>
+                `;
+                console.log(111)
+                reportContainer.appendChild(summaryDiv);
+            } else {
+                console.log(112)
+                reportContainer.innerHTML = `<p>${data.message}</p>`;
+            }
+        } catch (error) {
+            console.log(113)
+            console.error('Error generating report:', error);
+            document.getElementById('reportContainer').innerHTML = '<p>Error generating report. Please try again.</p>';
+        }
+    });
+
+    document.getElementById('downloadPDF').addEventListener('click', async () => {
+        try {
+            const reportType = document.getElementById('reportType').value;
+            let url = `/admin/downloadSalesReport/pdf?reportType=${reportType}`;
+            
+            if (reportType === 'custom') {
+                const startDate = document.getElementById('startDate').value;
+                const endDate = document.getElementById('endDate').value;
+                
+                if (!startDate || !endDate) {
+                    alert('Please select both start and end dates for the custom report.');
+                    return;
+                }
+                
+                url += `&startDate=${startDate}&endDate=${endDate}`;
+            }
+
+            const response = await fetch(url);
+            
+            if (!response.ok) {
+                throw new Error('Failed to download PDF');
+            }
+            
+            const blob = await response.blob();
+            const downloadUrl = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = downloadUrl;
+            a.download = `sales-report-${Date.now()}.pdf`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            window.URL.revokeObjectURL(downloadUrl);
+            
+        } catch (error) {
+            console.error('Download error:', error);
+            alert('Failed to download PDF. Please try again.');
+        }
+    });
+
+    document.getElementById('downloadExcel').addEventListener('click', async () => {
+        const reportType = document.getElementById('reportType').value;
+        let url = `/admin/downloadSalesReport/excel?reportType=${reportType}`;
         
+        // Add start and end dates for custom report
+        if (reportType === 'custom') {
+            const startDate = document.getElementById('startDate').value;
+            const endDate = document.getElementById('endDate').value;
+            
+            if (!startDate || !endDate) {
+                alert('Please select both start and end dates for the custom report.');
+                return;
+            }
+            
+            url += `&startDate=${startDate}&endDate=${endDate}`;
+        }
+
+        try {
+            const response = await fetch(url);
+            
+            if (!response.ok) {
+                throw new Error('Failed to download Excel');
+            }
+            
+            const blob = await response.blob();
+            const downloadUrl = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = downloadUrl;
+            a.download = 'sales-report.xlsx';
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+        } catch (error) {
+            console.error('Download error:', error);
+            alert('Failed to download Excel');
+        }
+    });
+</script>
+
+
 </body>
 </html>

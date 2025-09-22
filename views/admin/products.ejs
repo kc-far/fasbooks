@@ -380,7 +380,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         <td><%= book.title %></td>
                         <td><%= book.categoryId ? book.categoryId.name : 'No Category' %></td> <!-- Check if category is populated -->
                         <td>₹<%= book.price.toFixed(2) %></td>
-                        <td><%= book.stock %></td> <!-- Display stock value -->
+                        <td><%= book.stock.toFixed(0) %></td> <!-- Display stock value -->
                         <td>
                             <img src="/<%= book.images[0] %>" alt="<%= book.title %> Cover" style="width: 50px; height: auto;">
                         </td>
@@ -527,7 +527,7 @@ document.addEventListener('DOMContentLoaded', () => {
                                     </div>
                                     <div class="mb-3">
                                         <label for="editBookStock" class="form-label">Stock</label>
-                                        <input type="number" class="form-control" id="editBookStock" name="stock" required step="0.01">
+                                        <input type="number" class="form-control" id="editBookStock" name="stock" required step="0">
                                     </div>
                                 
                                    

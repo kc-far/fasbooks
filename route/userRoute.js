@@ -45,7 +45,10 @@ router.get('/home', userAuth.checkSession, userController.getHome);
 router.get('/profilePersonal', userAuth.checkSession, userController.getProfile);
 router.post('/editProfile',userAuth.checkSession,  userController.editProfile);
 router.get('/profileOrders', userAuth.checkSession, userController.getOrders)
+router.get('/orderDetails/:orderId',userAuth.checkSession,  userController.orderDetails)
+
 // Address
+router.get('/profileAddress',userAuth.checkSession,userController.getAddress)
 router.post('/addAddress', userAuth.checkSession, userController.addAddress);
 router.post('/editAddress/:addressId', userAuth.checkSession, userController.editAddress);
 router.post('/deleteAddress/:addressId', userAuth.checkSession, userController.deleteAddress);
@@ -67,21 +70,29 @@ router.post('/wishlistAdd/:id',userAuth.checkSession,userController.addBooksWish
 router.post('/wishlist/remove/:id',userAuth.checkSession, userController.removeWishlist)
 
 // Checkout
-//router.post('/checkout', userAuth.checkSession, orderController.processCheckout);
-router.get('/checkout', userAuth.checkSession, orderController.renderCheckout);
+router.post('/checkout', userAuth.checkSession, orderController.processCheckout);
+router.get('/checkout', userAuth.checkSession, orderController.getCartItems);
 router.post('/addNewAddress', userAuth.checkSession, orderController.addNewAddress);
 
-// // Payment
- router.post('/checkoutCOD', userAuth.checkSession, orderController.placeCODOrder);
+router.post('/validateCoupon',userAuth.checkSession,orderController.validateCoupon)
+router.get('/getAvailableCoupons',userAuth.checkSession,orderController.getAvailableCoupons)
+ // Payment
+ //router.post('/checkoutCOD', userAuth.checkSession, orderController.placeCODOrder);
+ router.post('/verify-razorpay-payment',userAuth.checkSession, orderController.verifyPayment);
+ router.get('/failed',userAuth.checkSession,orderController.paymentFailed)
+ router.get('/order-details/:orderId',userAuth.checkSession,orderController.retryPayment);
 
 //Order
 router.get('/orderSuccess', userAuth.checkSession, orderController.orderSuccess);
 router.get('/orderFailed', userAuth.checkSession, orderController.orderFailed);
 router.post('/ordersCancel/:orderId', userAuth.checkSession, orderController.cancelOrder);
-router.post('/ordersReturn/:orderId', userAuth.checkSession, orderController.returnOrder);
+router.post('/orders/:orderId/cancel/:productId',userAuth.checkSession,orderController.cancelItem)
+router.post('/ordersReturn/:orderId/:productId', userAuth.checkSession, orderController.returnItem);
 
 router.get('/orders/:orderId/invoice',userAuth.checkSession,orderController.getInvoice)
-//router.post('/orders/return/:orderId/:productId', userAuth.checkSession, orderController.returnOrder);
+
+//wallet
+router.get('/wallet',userAuth.checkSession, userController.getWallet)
 
 // Google Authentication
 router.get('/auth/google', passport.authenticate('google', { scope: ['profile', 'email'] }));
