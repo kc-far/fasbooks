@@ -8,8 +8,14 @@ const mongoose = require("mongoose")
 const fs = require('fs');
 const Category = require('../models/categoryModel');
 const Order=require('../models/orderModel')
+const Coupon = require('../models/couponModel');
+const Offer=require('../models/offerModel')
 const  PDFDocument  = require('pdfkit');
+const ExcelJS = require("exceljs");
+const  {jsPDF}  = require("jspdf");
+require("jspdf-autotable");
 const Admin = require("../models/adminModel")
+const Wallet =require('../models/walletModel')
 
 //login page
 
@@ -111,7 +117,7 @@ const getDashboardData = async (req, res) => {
             { $limit: 10 },
             {
                 $lookup: {
-                    from: 'books',
+                    from: 'books', 
                     localField: '_id',
                     foreignField: '_id',
                     as: 'productInfo'
@@ -226,7 +232,7 @@ const blockUser = async (req, res) => {
         const { userId } = req.body;  
 
         if (!userId) {
-            console.error('User ID is missing!'); 
+            
             return res.status(400).send('User ID is required');
         }
 
@@ -244,7 +250,7 @@ const unblockUser = async (req, res) => {
     try {
         const { userId } = req.body; 
         if (!userId) {
-            console.error('User ID is missing!'); 
+            
             return res.status(400).send('User ID is required');
         }
 
@@ -454,7 +460,7 @@ const getOrders = async (req, res) => {
         const totalPages = Math.ceil(totalOrders / limit); // Calculate total pages
 
        
-
+    console.log(orders)
         // Render the EJS view and pass the orders data, current page, and total pages
         res.render('admin/orders', { orders, currentPage: page, totalPages }); // Make sure 'admin/orders' matches your EJS view file
     } catch (error) {
@@ -465,7 +471,7 @@ const getOrders = async (req, res) => {
 
 // Update order status
 const orderStatus = async (req, res) => {
-    console.log("working orderstatus")
+    
   try {
     const { id } = req.params;
     const { status } = req.body;
@@ -477,6 +483,8 @@ const orderStatus = async (req, res) => {
       "delivered",
       "cancelled",
       "returned",
+      "paid",
+      "processing"
     ];
     
     if (!validStatuses.includes(status)) {
@@ -512,354 +520,861 @@ const orderStatus = async (req, res) => {
     res.status(500).send("Internal Server Error");
   }
 };
-const getDeliveredSalesReport = async (req, res) => {
+const getCoupons = async (req, res) => {
     try {
-        const page = parseInt(req.query.page) || 1; // Default to the first page
-        const limit = 5; // Orders per page
-        const skip = (page - 1) * limit;
+        const { message, error } = req.query;
+        const currentDate = new Date();
 
-        // Fetch the total count of delivered orders for pagination
-        const totalOrders = await Order.countDocuments({ status: 'delivered' });
-        const totalPages = Math.ceil(totalOrders / limit);
-
-        // Fetch only delivered orders, populate userId to get the user's name, and apply pagination
-        const deliveredOrders = await Order.find({ status: 'delivered' })
-            .populate('userId', 'name') // Only populate the 'name' field from User
-            .skip(skip)
-            .limit(limit);
-
-        // Pass orders data and pagination details to the EJS page
-        res.render('admin/report', { 
-            salesReports: deliveredOrders,
-            currentPage: page,
-            totalPages: totalPages
-        });
+        // Deactivate expired coupons
+        await Coupon.updateMany(
+            { 
+                isActive: true, 
+                validUntil: { $lt: currentDate } 
+            },
+            { $set: { isActive: false } }
+        );
+        const coupons = await Coupon.find();
+        res.render('admin/coupons', { coupons ,message, error});
     } catch (error) {
-        console.error('Error fetching sales report:', error);
-        res.status(500).send('Error fetching sales report');
+        console.error('Error fetching coupons:', error);
+        res.status(500).send('Server error');
     }
 };
-const getDateQuery = (reportType, startDate, endDate) => {
+const getCreateCoupon = (req, res) => {
+    try {
+        const { message, error } = req.query;
+
+        res.render('admin/createCoupon',{message, error})
+    } catch (error) {
+        console.log(error)
+        res.json('error while showing the coupon page')
+    }
+}
+const createCoupon = async (req, res) => {
+     const { code, discount, minOrderValue, validFrom, validUntil } = req.body;
+     // Server-side validation
+    if (!code || !discount || !minOrderValue || !validFrom || !validUntil) {
+        return res.redirect(`/admin/getCreateCoupon?error=Please+fill+in+all+fields&code=${code || ''}&discount=${discount || ''}&minOrderValue=${minOrderValue || ''}&validFrom=${validFrom || ''}&validUntil=${validUntil || ''}`);
+    }
+    
+    if (discount <= 0 || discount > 50) {
+        return res.redirect(`/admin/getCreateCoupon?error=Discount+should+be+between+1+and+50&code=${code}&discount=${discount}&minOrderValue=${minOrderValue}&validFrom=${validFrom}&validUntil=${validUntil}`);
+    }
+    
+    if (minOrderValue <= 0) {
+        return res.redirect(`/admin/getCreateCoupon?error=Minimum+order+value+should+be+greater+than+0&code=${code}&discount=${discount}&minOrderValue=${minOrderValue}&validFrom=${validFrom}&validUntil=${validUntil}`);
+    }
+    
+    if (validFrom > validUntil) {
+        return res.redirect(`/admin/getCreateCoupon?error=Valid+From+is+not+greater+than+Valid+Until&code=${code}&discount=${discount}&minOrderValue=${minOrderValue}&validFrom=${validFrom}&validUntil=${validUntil}`);
+    }
+
+    try {
+        const existingCoupon = await Coupon.findOne({ code });
+        if (existingCoupon) {
+            return res.redirect('/admin/getCreateCoupon?error=Coupon+code+already+exists');
+        }
+
+         // Create the new coupon
+        const newCoupon = new Coupon({
+            code,
+            discount,
+            minOrderValue,
+            validFrom: new Date(validFrom),
+            validUntil: new Date(validUntil),
+            isActive: true
+        });
+
+         await newCoupon.save();
+
+        return res.redirect('/admin/coupons?message=Coupon+created+successfully');
+    } catch (error) {
+        console.error('Error creating coupon:', error);
+        return res.redirect('/admin/coupons?error=An+error+occurred+while+creating+the+coupon');
+    }
+}
+const getEditCoupon = async (req, res) => {
+    const couponId = req.params.id;
+    const { error, message } = req.query;  // Capture error and message from query parameters
+    
+    try {
+        const coupon = await Coupon.findById(couponId);
+        if (!coupon) {
+            return res.redirect('/admin/coupons?error=Coupon+not+found');
+        }
+        
+        // Pass coupon, error, and message to the template
+        res.render('admin/editCoupon', { coupon, error, message });
+    } catch (error) {
+        console.error('Error fetching coupon for edit:', error);
+        res.redirect('/admin/coupons?error=An+error+occurred+while+fetching+the+coupon');
+    }
+};
+const updateCoupon = async (req, res) => {
+    const couponId = req.params.id;
+    const { code, discount, minOrderValue, validFrom, validUntil } = req.body;
+
+    // Server-side validation
+    if (!code || !discount || !minOrderValue || !validFrom || !validUntil) {
+        return res.redirect(`/admin/editCoupon/${couponId}?error=Please+fill+in+all+fields`);
+    }
+
+    if (discount <= 0 || discount > 100) {
+        return res.redirect(`/admin/editCoupon/${couponId}?error=Discount+should+be+between+1+and+100`);
+    }
+
+    if (minOrderValue <= 0) {
+        return res.redirect(`/admin/editCoupon/${couponId}?error=Minimum+order+value+should+be+greater+than+0`);
+    }
+
+    
+    try {
+        const existingCoupon = await Coupon.findOne({ code, _id: { $ne: couponId } });
+        if (existingCoupon) {
+            return res.redirect(`/admin/editCoupon/${couponId}?error=Coupon+code+already+exists`);
+        }
+
+        const coupon = await Coupon.findById(couponId);
+        if (!coupon) {
+            return res.redirect('/admin/coupons?error=Coupon+not+found');
+        }
+        
+
+        // Update coupon details
+        coupon.code = code;
+        coupon.discount = discount;
+        coupon.minOrderValue = minOrderValue;
+        coupon.validFrom = new Date(validFrom);
+        coupon.validUntil = new Date(validUntil);
+
+        await coupon.save();
+        
+        res.redirect('/admin/coupons?message=Coupon+updated+successfully');
+    } catch (error) {
+        console.error('Error updating coupon:', error);
+        res.redirect(`/admin/editCoupon/${couponId}?error=An+error+occurred+while+updating+the+coupon`);
+    }
+};
+const deactivateCoupon = async (req, res) => {
+    const { id } = req.params;
+
+    try {
+        const coupon = await Coupon.findById(id);
+        if (!coupon) {
+            return res.status(404).redirect(`/admin/coupons?error=Coupon+not+found`);
+        }
+
+        // Toggle the isActive status
+        coupon.isActive = !coupon.isActive;
+        await coupon.save();
+
+        res.redirect(`/admin/coupons?message=Coupon+status+updated+successfully`);
+    } catch (error) {
+        console.error('Error toggling coupon status:', error);
+        res.status(500).redirect(`/admin/coupons?error=Error+updating+coupon+status`);
+    }
+};
+
+const getOffers=async(req,res)=>{
+    try {
+        const offers=await Offer.find()
+                                .populate({
+                                    path: 'applicableProducts',
+                                    select: 'title'
+                                })
+                                .populate({
+                                    path: 'applicableCategories',
+                                    select: 'name'
+                                })
+        res.render('admin/offer',{offers})
+    } catch (error) {
+        res.status(500).send('Server error')
+    }
+}
+const getCreateOffer=async(req,res)=>{
+    try{
+        //filter products &categories
+         const allProducts = await Book.find({ isActive: true });
+         const allCategories = await Category.find({ isActive: true });
+        
+        //query meesagess from query params
+          const errorMessage = req.query.error || null;
+          const successMessage = req.query.error || null;
+
+        res.render('admin/createOffer', { 
+            allProducts, 
+            allCategories, 
+            errorMessage, 
+            successMessage 
+        });
+
+    }catch(err){
+        res.redirect('/admin/getCreateOffer?error=An+error+occurred+while+fetching+data')
+
+    }
+}
+const createOffer=async(req,res)=>{
+    try {
+        const { title, discount, applicableProducts, applicableCategories, validFrom, validUntil, isActive } = req.body;
+
+        // Validation checks
+        if (!title || !discount || !validFrom || !validUntil) {
+            return res.redirect('/admin/getCreateOffer?error=All+fields+are+required.');
+        }
+
+        if (isNaN(discount) || discount < 0 || discount > 100) {
+            return res.redirect('/admin/getCreateOffer?error=Discount+must+be+a+number+between+0+and+100.');
+        }
+
+        if (new Date(validFrom) >= new Date(validUntil)) {
+            return res.redirect('/admin/getCreateOffer?error=Valid+From+date+must+be+earlier+than+Valid+Until+date.');
+        }
+
+        const existingOffer = await Offer.findOne({ title });
+        if (existingOffer) {
+            return res.redirect('/admin/getCreateOffer?error=An+offer+with+this+title+already+exists.');
+        }
+
+        const selectedProducts = Array.isArray(applicableProducts) ? applicableProducts : [applicableProducts].filter(Boolean);
+        const selectedCategories = Array.isArray(applicableCategories) ? applicableCategories : [applicableCategories].filter(Boolean);
+
+        if (selectedProducts.length === 0 && selectedCategories.length === 0) {
+            return res.redirect('/admin/getCreateOffer?error=At+least+one+product+or+category+must+be+selected.');
+        }
+
+        const newOffer = new Offer({
+            title,
+            discount,
+            applicableProducts: selectedProducts,
+            applicableCategories: selectedCategories,
+            validFrom: new Date(validFrom),
+            validUntil: new Date(validUntil),
+            isActive: isActive === 'true', // Convert to boolean
+        });
+        await newOffer.save()
+        res.redirect('/admin/offer-management?message=Offer+created+successfully');
+
+    } catch (error) {
+        console.error("Error creating offer:", error);
+        res.redirect('/admin/getCreateOffer?error=An+error+occurred+while+creating+the+offer.');
+    }
+}
+const getEditOffer=async(req,res)=>{
+     try {
+        const { offerId } = req.params;
+        const error = req.query.error || null; // Get error message if present
+
+        // Retrieve the specific offer
+        const offer = await Offer.findById(offerId)
+                                 .populate('applicableProducts')
+                                 .populate('applicableCategories');
+        
+        // Fetch all active products and categories
+        const allProducts = await Book.find({ isActive: true });
+        const allCategories = await Category.find({ isActive: true });
+
+        if (!offer) {
+            // Pass error message to the template
+            return res.render('admin/editOffer', { offer: null, allProducts, allCategories, error: "Offer not found" });
+        }
+
+        res.render('admin/editOffer', { offer, allProducts, allCategories, error });
+    } catch (error) {
+        console.error('Error loading edit offer page:', error);
+        res.render('admin/editOffer', { offer: null, allProducts, allCategories, error: "An error occurred while loading the edit offer page." });
+    }
+}
+const editOffer=async(req,res)=>{
+    try {
+        const { offerId } = req.params;
+        const { title, discount, applicableProducts, applicableCategories, validFrom, validUntil, isActive } = req.body;
+
+        // Validation checks
+        if (!title || !discount || !validFrom || !validUntil) {
+            return res.redirect(`/admin/editOffer/${offerId}?error=All+fields+are+required.`);
+        }
+
+        if (isNaN(discount) || discount <= 0 || discount > 100) {
+            return res.redirect(`/admin/editOffer/${offerId}?error=Discount+must+be+a+number+between+0+and+100.`);
+        }
+
+        if (new Date(validFrom) >= new Date(validUntil)) {
+            return res.redirect(`/admin/editOffer/${offerId}?error=Valid+From+date+must+be+earlier+than+Valid+Until+date.`);
+        }
+
+         // Check if an offer with the same title already exists, excluding the current offer
+        const existingOffer = await Offer.findOne({ title, _id: { $ne: offerId } });
+        if (existingOffer) {
+            return res.redirect(`/admin/editOffer/${offerId}?error=An+offer+with+this+title+already+exists.`);
+        }
+        
+        // Update the offer
+        await Offer.findByIdAndUpdate(offerId, {
+            title,
+            discount,
+            applicableProducts,
+            applicableCategories,
+            validFrom: new Date(validFrom),
+            validUntil: new Date(validUntil),
+            isActive: isActive === 'true' // Convert to boolean
+        });
+        res.redirect('/admin/offer-management');
+    } catch (error) {
+        console.error('Error updating offer:', error);
+        res.status(500).send("An error occurred while updating the offer.");
+    }
+}
+const deactivateOffer=async(req,res)=>{
+   try {
+        const { offerId } = req.params;
+
+        // Find the offer and toggle its status
+        const offer = await Offer.findById(offerId);
+        if (offer) {
+            offer.isActive = !offer.isActive;
+            await offer.save();
+        }
+
+        res.redirect('/admin/offer-management'); // Redirect to the offers list after deactivation
+    } catch (error) {
+        console.error('Error toggling offer status:', error);
+        res.status(500).send("An error occurred while changing the offer status.");
+    }
+}
+
+// calculate sale summary
+const calculateSalesSummary = async (salesData) => {
+  return {
+    totalOrders: salesData.length,
+    totalSales: salesData.reduce((sum, order) => sum + order.total, 0),
+    totalDiscount: salesData.reduce(
+      (sum, order) => sum + (order.discount || 0),
+      0
+    ),
+    averageOrderValue:
+      salesData.length > 0
+        ? salesData.reduce((sum, order) => sum + order.total, 0) /
+          salesData.length
+        : 0,
+  };
+};
+
+// Remove the salesController object and directly export individual functions
+const renderSalesReport = async (req, res) => {
+    
+  try {
+    
     const today = new Date();
-    let dateQuery = {}; 
-    let reportPeriodLabel = "";
+    const startOfDay = new Date(today.setHours(0, 0, 0, 0));
+    const endOfDay = new Date(today.setHours(23, 59, 59, 999));
+
+    // Get initial daily sales data
+    const salesData = await Order.find({
+      createdAt: { $gte: startOfDay, $lte: endOfDay },
+      status: { $nin: ["cancelled"] },
+    })
+      .populate("userId", "name")
+      .populate("items.productId");
+
+    // Calculate summary statistics
+    const summary = await calculateSalesSummary(salesData);
+
+    res.render("admin/report", {
+      sales: salesData,
+      summary,
+      reportType: "daily",
+    });
+    
+  } catch (error) {
+    console.error("Error rendering sales report:", error);
+    res.status(500).send("Error loading sales report");
+  }
+};
+
+const getSalesReport = async (req, res) => {
+    console.log("Full Request Body:", req.body);
+    console.log("Report Type:", req.body.reportType);
+    try {
+        const { reportType, startDate, endDate } = req.body;
+
+        // Validate report type
+        if (!reportType) {
+            return res.status(400).json({
+                success: false,
+                message: "Report type is required",
+            });
+        }
+
+        let dateQuery={
+            status:'delivered'
+        }
+        const now = new Date();
+
+        switch(reportType){
+            case 'dialy':
+                dateQuery.createdAt={
+                    $gte:new Date(now.setHours(0,0,0,0)),
+                    $lte:new Date(now.setHours(23,59,59,999))
+
+                }
+            break;
+
+            case 'weekly':
+                const startOfWeek=new Date(now.setDate(now.getDate()-now.getDay()))
+                dateQuery.createdAt={
+                    $gte:new Date(startOfWeek.setHours(0,0,0,0)),
+                    $lte:new Date()
+                }
+            break;
+
+            case 'monthly':
+                const startOfMonth=new Date(now.getFullYear(),now.getMonth(),1)
+                dateQuery.createdAt={
+                    $gte:startOfMonth,
+                    $lte:new Date()
+                }
+            break;
+
+            case 'custom':
+                if(!startDate||!endDate){
+                    return res.status(400).json({
+                        success: false,
+                        message: "Start and end dates are required for custom report",
+                    })
+                }
+                dateQuery.createdAt={
+                    $gte:new Date(startDate),
+                    $lte:new Date(new Date(endDate).setHours(23,59,59,999))
+                }
+            break;
+
+            default:                
+                return res.status(400).json({
+                    success: false,
+                    message: "Invalid report type",
+                });
+        }
+
+        const salesData=await Order.find(dateQuery)
+                                   .populate("userId", "name email")
+                                   .populate("items.productId")
+                                   .sort({ createdAt: -1 });
+
+        console.log("data is:", salesData);
+        const summary = await calculateSalesSummary(salesData);
+
+        // Return response
+        res.json({
+            success: true,
+            sales: salesData,
+            summary,
+        });
+    } catch (error) {
+        console.error("Error generating sales report:", error);
+        res.status(500).json({
+            success: false,
+            message: "Error generating sales report",
+            error: error.message,
+        }); 
+    }
+}
+
+const downloadExcel= async (req,res)=>{
+    try {
+        const { reportType, startDate, endDate } = req.query;
+        console.log('download query..',req.query)
+
+        let dateQuery={status:"delivered"}
+        let now=new Date()
 
     switch (reportType) {
-        case "daily": {
-            const startOfDay = new Date(today);
-            startOfDay.setHours(0, 0, 0, 0);
-
-            const endOfDay = new Date(today);
-            endOfDay.setHours(23, 59, 59, 999);
-
-            dateQuery = { $gte: startOfDay, $lt: endOfDay };
-            reportPeriodLabel = `Today (${startOfDay.toLocaleDateString()})`;
-            break;
-        }
-        case "weekly": {
-            const startOfWeek = new Date(today);
-            startOfWeek.setDate(today.getDate() - 6);
-            startOfWeek.setHours(0, 0, 0, 0);
-
-            const endOfWeek = new Date(today);
-            endOfWeek.setHours(23, 59, 59, 999);
-
-            dateQuery = { $gte: startOfWeek, $lt: endOfWeek };
-            reportPeriodLabel = `This Week (${startOfWeek.toLocaleDateString()} - ${endOfWeek.toLocaleDateString()})`;
-            break;
-        }
-        case "monthly": {
-            const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
-            const endOfMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0);
-            endOfMonth.setHours(23, 59, 59, 999);
-
-            dateQuery = { $gte: startOfMonth, $lt: endOfMonth };
-            reportPeriodLabel = `This Month (${startOfMonth.toLocaleDateString()} - ${endOfMonth.toLocaleDateString()})`;
-            break;
-        }
-        case "custom":
-            if (!startDate || !endDate) throw new Error("Start date and end date are required for custom reports.");
-            const start = new Date(startDate);
-            const end = new Date(new Date(endDate).setHours(23, 59, 59, 999));
-            dateQuery = { $gte: start, $lt: end };
-            reportPeriodLabel = `Custom Range (${start.toLocaleDateString()} - ${end.toLocaleDateString()})`;
-            break;
-        default:
-            throw new Error("Invalid report type.");
-    }
-
-    return { dateQuery, reportPeriodLabel };
-};
-
-   
-
-
-const downloadSalesReport = async (req, res) => {
-    try {
-        const { reportType, startDate, endDate } = req.body;
-       const { dateQuery, reportPeriodLabel } = getDateQuery(reportType, startDate, endDate);
-
-
-        // Fetch delivered orders
-        const orders = await Order.find({ status: "delivered", createdAt: dateQuery }).populate('userId');
-
-        // Calculate summary data
-        const totalOrders = orders.length;
-        const totalIncome = orders.reduce((sum, order) => sum + order.total, 0);
-        const totalDiscount = orders.reduce((sum, order) => sum + (order.discount || 0), 0);
-
-        // Initialize PDF Document
-        const doc = new PDFDocument({ margin: 50 });
-
-        // Set Headers and Pipe Response
-        res.setHeader("Content-Type", "application/pdf");
-        res.setHeader("Content-Disposition", 'attachment; filename="sales_report.pdf"');
-        doc.pipe(res);
-
-        // Color scheme
-        const colors = {
-            primary: "#3b45ff",
-            headerText: "#ffffff",
-            text: "#1f2937",
-            border: "#cbd5e1",
-            alternate: "#f1f5f9"
+      case "daily":
+        dateQuery.createdAt = {
+          $gte: new Date(now.setHours(0, 0, 0, 0)),
+          $lte: new Date(now.setHours(23, 59, 59, 999)),
         };
-
-        // Header
-        doc.rect(0, 0, doc.page.width, 140).fill(colors.primary);
-
-        doc.fontSize(20).font("Helvetica-Bold").fillColor(colors.headerText).text("SAF BOOKS XYZ Pvt Ltd", 50, 30, {
-            width: doc.page.width - 100,
-            align: "center"
-        });
-
-        doc.fontSize(28).font("Helvetica-Bold").fillColor(colors.headerText).text("Sales Report", 50, 60, {
-            width: doc.page.width - 100,
-            align: "center"
-        });
-
-        doc.fontSize(12)
-            .font("Helvetica")
-            .fillColor(colors.headerText)
-            .text(`Report Period: ${reportPeriodLabel}`, 50, 100, { align: "center" })
-            .text(`Generated on: ${new Date().toLocaleDateString()}`, 50, 120, { align: "center" });
-
-        // Summary Section
-        doc.fillColor(colors.text).fontSize(12);
-        doc.text(`Total Orders: ${totalOrders}`, 50, 160)
-           .text(`Total Income: ${totalIncome.toFixed(2)}`, 250, 160)
-           .text(`Total Discount: ${totalDiscount.toFixed(2)}`, 420, 160);
-
-        // Table Headers
-        const headers = ["Order ID", "Customer Name", "Total", "Order Date", "Status"];
-        const headerWidths = [120, 160, 60, 100, 70];
-        let currentX = 50;
-        let currentY = 200;
-
-        doc.fillColor(colors.primary);
-        doc.rect(currentX, currentY, doc.page.width - 100, 20).fill();
-
-        headers.forEach((header, i) => {
-            doc.fillColor(colors.headerText)
-               .font("Helvetica-Bold")
-               .fontSize(10)
-               .text(header, currentX, currentY + 5, { width: headerWidths[i], align: "center" });
-            currentX += headerWidths[i];
-        });
-
-        // Table Content
-        currentY += 20;
-
-        orders.forEach((order, index) => {
-            currentX = 50;
-            const isEvenRow = index % 2 === 0;
-            doc.fillColor(isEvenRow ? colors.alternate : "#ffffff")
-               .rect(currentX, currentY, doc.page.width - 100, 20)
-               .fill();
-
-            doc.fillColor(colors.text).fontSize(10);
-            doc.text(order.OrderId.toString(), currentX, currentY + 5, { width: 140, align: "center" });
-            currentX += 120;
-            doc.text(order.userId?.name || "N/A", currentX, currentY + 5, { width: 160, align: "center" });
-            currentX += 160;
-            doc.text(`${order.total.toFixed(2)}`, currentX, currentY + 5, { width: 60, align: "center" });
-            currentX += 60;
-            doc.text(new Date(order.createdAt).toLocaleDateString(), currentX, currentY + 5, { width: 100, align: "center" });
-            currentX += 100;
-            doc.text(order.status, currentX, currentY + 5, { width: 70, align: "center" });
-
-            currentY += 20;
-        });
-        doc.moveDown(1);
-        doc.fillColor('#000000').lineWidth(0.5).moveTo(50, currentY).lineTo(555, currentY).stroke();
-        doc.moveDown(0.5);
-        // Summary Section at the End
-        currentY += 30;
-doc.fontSize(12).fillColor(colors.primary);
-
-doc.text(`Total Orders: ${totalOrders}`, 50, currentY);
-currentY += 20; // Move down to the next line
-
-doc.text(`Total Income: ${totalIncome.toFixed(2)}`, 50, currentY);
-currentY += 20; // Move down to the next line
-
-doc.text(`Total Discount: ${totalDiscount.toFixed(2)}`, 50, currentY);
-
-
-        // End PDF Document
-        doc.end();
-    } catch (error) {
-        console.error("Error generating PDF:", error.message);
-        res.status(500).send(`Failed to generate PDF report: ${error.message}`);
+        break;
+      case "weekly":
+        const startOfWeek = new Date(now.setDate(now.getDate() - now.getDay()));
+        dateQuery.createdAt = {
+          $gte: new Date(startOfWeek.setHours(0, 0, 0, 0)),
+          $lte: new Date(),
+        };
+        break;
+      case "monthly":
+        const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+        dateQuery.createdAt = {
+          $gte: startOfMonth,
+          $lte: new Date(),
+        };
+        break;
+      case "custom":
+        if (startDate && endDate) {
+          dateQuery.createdAt = {
+            $gte: new Date(startDate),
+            $lte: new Date(new Date(endDate).setHours(23, 59, 59, 999)),
+          };
+        }
+        break;
     }
-};
+    const orders=await Order.find(dateQuery)
+                           .populate('items.productId','title author')
+                           .populate('userId','name email')
+                           .sort({createdAt:-1})
+console.log('exceldwnld orders..',orders)
+    const workbook = new ExcelJS.Workbook();
+    const worksheet = workbook.addWorksheet("Sales Report");
+    worksheet.columns = [
+      { header: "Order ID", key: "orderId", width: 20 },
+      { header: "Date", key: "date", width: 15 },
+      { header: "Customer", key: "customer", width: 25 },
+      { header: "Shipping Address", key: "shippingAddress", width: 40 },
+      { header: "Products", key: "products", width: 50 },
+      { header: "Total Amount", key: "totalAmount", width: 15 },
+      { header: "Coupon Discount", key: "couponDiscount", width: 15 },
+      { header: "Final Amount", key: "finalAmount", width: 15 },
+      { header: "Payment Method", key: "paymentMethod", width: 15 },
+      { header: "Status", key: "status", width: 15 },
+    ];
 
+    orders.forEach((order)=>{
+        worksheet.addRow({
+            orderId:order.OrderId,
+            date: new Date(order.createdAt).toLocaleDateString(),
+            customer:order.userId?`${order.userId.name} (${order.userId.email})`:'N/A',
+            shippingAddress:order.address,
+            products:order.items.map(
+                (item)=>`${
+                    item.productId 
+                    ?`${item.productId.title} (${item.productId.author})`
+                    :'N/A'
+                } - ${item.quantity} pcs @ ₹${item.priceAtOrder}`
+            ).join(" , "),
+            totalAmount:`${order.total.toFixed(2)}`,
+            couponDiscount:`${order.discount.toFixed(2)}`,
+            finalAmount:`${(order.total-order.discount).toFixed(2)}`,
+            paymentMethod:order.paymentMethod.toUpperCase(),
+            status:order.status.charAt(0).toUpperCase() + order.status.slice(1),
+        })
+    })
 
-// Backend: Route to serve filtered data for table display
-const filterSalesReport = async (req, res) => {
+    const totalOrders=orders.length;
+    const totalAmount=orders.reduce(
+        (sum,ord)=>sum+ord.total,0
+    )
+    const totalDiscount=orders.reduce(
+        (sum,ord)=>sum+(ord.discount||0),0
+    )
+    const finalAmount=totalAmount-totalDiscount
+
+    worksheet.addRow({});
+    worksheet.addRow(["Summary"]);
+    worksheet.addRow(["Total Orders", totalOrders]);
+    worksheet.addRow(["Total Sales", `₹${totalAmount.toFixed(2)}`]);
+    worksheet.addRow(["Total Discount", `₹${totalDiscount.toFixed(2)}`]);
+    worksheet.addRow(["Net Sales", `₹${finalAmount.toFixed(2)}`]);
+
+    // Set response headers
+    res.setHeader(
+      "Content-Type",
+      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    );
+    res.setHeader(
+      "Content-Disposition",
+      `attachment; filename=sales-report-${Date.now()}.xlsx`
+    );
+
+    // Write to response
+    await workbook.xlsx.write(res);
+    res.end();
+
+    } catch (error) {
+        console.error("Excel Download Error:", error);
+        res.status(500).send("Error generating Excel: " + error.message);      
+    }
+
+}
+
+const downloadPdf=async (req,res)=>{
     try {
-        const { reportType, startDate, endDate } = req.body;
-        const {dateQuery} = getDateQuery(reportType, startDate, endDate);
+        const { reportType, startDate, endDate } = req.query;
 
-        const orders = await Order.find({ status: "delivered", createdAt: dateQuery }).populate('items.productId').populate('userId'); 
-        res.json(orders); // Send data as JSON for table display
+        // Validate report type
+        if (!reportType) {
+            return res
+                .status(400)
+                .json({ success: false, message: "Report type is required." });
+        }
+
+        // Construct date query
+        const now = new Date();
+        let dateQuery = { status: "delivered" };
+
+        switch (reportType) {
+            case "daily":
+                dateQuery.createdAt = {
+                   $gte: new Date(now.setHours(0, 0, 0, 0)),
+                   $lte: new Date(now.setHours(23, 59, 59, 999)),
+                };
+            break;
+            case "weekly":
+                const startOfWeek = new Date(now.setDate(now.getDate() - now.getDay()));
+                dateQuery.createdAt = {
+                    $gte: new Date(startOfWeek.setHours(0, 0, 0, 0)),
+                    $lte: new Date(),
+                };
+            break;
+            case "monthly":
+                const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+                dateQuery.createdAt = {
+                    $gte: startOfMonth,
+                    $lte: new Date(),
+                };
+            break;
+            case "custom":
+                if (!startDate || !endDate) {
+                    return res.status(400).json({
+                        success: false,
+                        message: "Start and end dates are required for custom reports.",
+                    });
+                }
+                dateQuery.createdAt = {
+                    $gte: new Date(startDate),
+                    $lte: new Date(new Date(endDate).setHours(23, 59, 59, 999)),
+                };
+            break;
+            default:
+                return res
+                    .status(400)
+                    .json({ success: false, message: "Invalid report type." });
+        }
+        const salesData = await Order.find(dateQuery)
+                                     .populate('userId','name email')
+                                     .populate('items.productId','title price')
+                                     .sort({createdAt:-1})
+        if (!salesData.length) {
+            return res.status(404).json({
+                success: false,
+                message: "No sales data found for the specified period.",
+            });
+        }
+
+        const doc= new jsPDF()
+        //title
+        doc.setFontSize(16)
+        doc.text("Sales Report", 105, 10, { align: "center" })
+        //metadata
+        doc.getFontSize(10)
+        doc.text(`Report Type: ${reportType.charAt(0).toUpperCase()+reportType.slice(1)}`, 14, 20);
+        doc.text(`Generated On: ${new Date().toLocaleString()}`, 14, 30);
+
+        const tableData=salesData.map((order)=>[
+            order.OrderId,
+            order.userId?order.userId.name:'N/A',
+            order.items.map((item)=>item.productId?.title).join(', '),
+            order.total.toFixed(2),
+            order.discount?order.discount.toFixed(2):'0.00',
+            (order.total-(order.discount||0)).toFixed(2),
+            order.paymentMethod.toUpperCase(),
+            new Date(order.createdAt).toLocaleString(),
+        ])
+
+        doc.autoTable({
+            startY: 40,
+            head: [
+                [
+                    "Order ID",
+                    "Customer",
+                    "Products",
+                    "Total Amount",
+                    "Discount",
+                    "Final Amount",
+                    "Payment Method",
+                    "Order Date",
+                ],
+            ],
+            body: tableData,
+            theme: "grid",
+            headStyles: { fillColor: [41, 128, 185], textColor: [255, 255, 255] },
+            styles: { fontSize: 8, cellPadding: 2 },
+        })
+
+        const totalOrders=salesData.length;
+        const totalSales=salesData.reduce((acc,ord)=>acc+ord.total,0).toFixed(2)
+        const totalDiscount=salesData.reduce((acc,ord)=>acc+(ord.discount||0),0).toFixed(2)
+
+        doc.addPage();
+        doc.text("Sales Summary", 105, 10, { align: "center" });
+        doc.autoTable({
+            startY: 20,
+            head: [["Metric", "Value"]],
+            body: [
+                ["Total Orders", totalOrders],
+                ["Total Sales", `${totalSales}/-`],
+                ["Total Discount", `${totalDiscount}/-`],
+            ],
+            theme: "grid",
+            styles: { fontSize: 10, cellPadding: 2 },   
+        })
+
+        const pdfBuffer=Buffer.from(doc.output("arraybuffer"));
+
+        // Set response headers
+        res.setHeader("Content-Type", "application/pdf");
+        res.setHeader(
+            "Content-Disposition",
+            `attachment; filename=sales-report-${Date.now()}.pdf`
+        );
+        res.setHeader("Content-Length", pdfBuffer.length);
+
+        // Send PDF
+        res.send(pdfBuffer);
+
+
     } catch (error) {
-        console.error('Error fetching filtered sales data:', error.message);
-        res.status(500).send('Failed to fetch filtered data.');
+        console.error("Error generating PDF:", error);
+        res.status(500).json({
+            success: false,
+            message: "Error generating PDF",
+            error: error.message,
+        });
     }
+
+}
+
+// const getReturnOrders=async (req,res)=>{
+//     console.log(1)
+//        const { orderId } = req.params;
+//        cosole.log('orderId',orderId) 
+//        try{
+//         console.log(2)
+//         const page = parseInt(req.query.page) || 1; 
+//         const limit = 5; 
+//         const skip = (page - 1) * limit;
+//         console.log(3)
+//         const order=await Order.findById(orderId)
+//                   .populate('items.productId')
+//                   .populate('userId')
+//         console.log("order...",order)
+//         if (!order) return res.status(404).send('Order not found');
+
+//         const returnOrders=order.items.filter(item=>item.returnStatus=='requested')
+//                                       .sort((a, b) => new Date(b.returnedAt) - new Date(a.returnedAt));
+// console.log(4)
+//         const paginatedItems = returnOrders.slice(skip, skip + limit);                             
+//         const totalPages = Math.ceil(returnOrders.length/limit)
+//         console.log(5)
+//         return res.render('admin/returnOrders',{returnOrders:paginatedItems, currentPage: page, totalPages})
+//         console.log(6)
+//        }catch(err) {
+//           console.log(err)
+//           res.status(500).send('error occure while fetching return orders')
+//        }
+// }
+
+
+const getReturnOrders = async (req, res) => {
+  
+  try {
+    const page = parseInt(req.query.page) || 1; 
+    const limit = 5; 
+    const skip = (page - 1) * limit;
+    
+    const orders = await Order.find()
+                    .populate('items.productId')
+                    .populate('userId');
+  
+
+    const allReturnItems = orders.reduce((acc, order) => {
+      const requestedItems = order.items.filter(item => item.returnStatus === 'requested')
+                                      .map(item => ({
+                                        ...item.toObject(),
+                                        orderId: order._id,
+                                        userId: order.userId
+                                      }));
+      return [...acc, ...requestedItems];
+    }, []);
+
+    allReturnItems.sort((a, b) => new Date(b.returnedAt) - new Date(a.returnedAt));
+
+    const paginatedItems = allReturnItems.slice(skip, skip + limit);                             
+    const totalPages = Math.ceil(allReturnItems.length / limit);
+    
+
+    return res.render('admin/returnOrders', { returnOrders: paginatedItems, currentPage: page, totalPages });
+  } catch (err) {
+    console.error('Error fetching return orders:', err.stack);
+    res.status(500).send('error occurred while fetching return orders');
+  }
 };
 
-const approveReturnRequest = async (req, res) => {
+
+const acceptReturn = async (req, res) => {
     const { orderId } = req.params;
     const { itemId } = req.body; 
-
-    try {
-        const order = await Order.findById(orderId).populate('items.productId');
-        if (!order) return res.status(404).send('Order not found');
-
-        const item = order.items.find(item => item._id.toString() === itemId);
-        if (!item) return res.status(404).send('Item not found');
-        if (item.returnStatus !== 'requested') return res.status(400).send('Return request is not pending for this item');
-
-        
-        item.returnStatus = 'approved';
-        item.isReturned = true;
-
-        if (item.returnReason !== 'Damaged') {
-            await Book.findByIdAndUpdate(item.productId._id, { $inc: { stock: item.quantity } });
-        }
-
-        const originalSubtotal = order.items.reduce((sum, item) => sum + item.priceAtOrder * item.quantity, 0);
-        const originalDiscount = order.discount || 0;
-        const discountPercentage = originalDiscount / originalSubtotal;
-
-        const itemDiscount = (item.priceAtOrder * item.quantity / originalSubtotal) * originalDiscount;
-        const refundAmount = item.priceAtOrder * item.quantity - itemDiscount; 
-
-        const remainingItems = order.items.filter(item => !item.isReturned); 
-        const updatedSubtotal = remainingItems.reduce((sum, item) => sum + item.priceAtOrder * item.quantity, 0);
-        const updatedDiscount = updatedSubtotal * discountPercentage; 
-        const updatedTotal = Math.max(0, updatedSubtotal + order.shipping - updatedDiscount); 
-
-        order.subtotal = updatedSubtotal;
-        order.discount = updatedDiscount;
-        order.total = updatedTotal;
-
-        if ((order.paymentStatus === 'paid' && order.paymentMethod !== 'cashOnDelivery') || order.paymentMethod === 'wallet') {
-            let wallet = await Wallet.findOne({ userId: order.userId });
-            if (!wallet) wallet = await Wallet.create({ userId: order.userId });
-
-            wallet.balance += refundAmount; 
-            wallet.transactions.push({
-                amount: refundAmount,
-                transactionType: 'credit',
-                orderId: order._id,
-                message: `${refundAmount.toFixed(2)} credited for returned product`,
-            });
-            await wallet.save();
-        }
-
-        await order.save();
-
-        res.redirect('/admin/orders'); // Redirect to admin orders page
-    } catch (error) {
-        console.error(error);
-        res.status(500).send('Server error');
-    }
-};
-
-
-
-
-const rejectReturnRequest = async (req, res) => {
-    const { orderId } = req.params;
-    const { itemId } = req.body;  
-
-    try {
-        const order = await Order.findById(orderId).populate('items.productId');
-        if (!order) return res.status(404).send('Order not found');
-
-        const item = order.items.find(item => item._id.toString() === itemId);
-        if (!item) return res.status(404).send('Item not found');
-        if (item.returnStatus !== 'requested') return res.status(400).send('Return request is not pending for this item');
-
-        // Reset return status and reason
-        item.returnStatus = null;
-        item.returnReason = null;
-
-        // If the product was marked as damaged, revert stock change
-        if (item.returnReason === 'Damaged') {
-            await Book.findByIdAndUpdate(item.productId._id, { $inc: { stock: -item.quantity } });
-        }
-
-        // Save the updated order
-        await order.save();
-
-        res.redirect('/admin/orders'); // Redirect to admin orders page
-    } catch (error) {
-        console.error(error);
-        res.status(500).send('Server error');
-    }
-};
-const acceptReturn = async (req, res) => {
   try {
-    const { orderId } = req.params;
-
-    // Validate orderId
-    if (!mongoose.Types.ObjectId.isValid(orderId)) {
-      return res.status(400).json({ success: false, message: "Invalid order ID" });
-    }
-
-    // Find the order
-    const order = await Order.findById(orderId);
+       
+    const order = await Order.findById(orderId).populate('items.productId');
+    console.log('oreders...:',order)
     if (!order) {
       return res.status(404).json({ success: false, message: "Order not found" });
     }
 
-    // Validate order status
-    if (order.status !== "returnRequested") {
-      return res.status(400).json({ success: false, message: "Return request is not valid" });
-    }
+   const item = order.items.find(item => item._id.toString() === itemId);
+   console.log('Received orderId:', orderId, 'itemId:', itemId)
+    if (!item) return res.status(404).json({ success: false, message:'Item not found'});
+    if (item.returnStatus !== 'requested') return res.status(400).send('Return request is not pending for this item');
+
+
 
     // Update the order status
-    order.status = "returned";
-    order.returnStatus = "accepted";
-    order.updatedAt = new Date();
-    await order.save();
+   
+    item.returnStatus = "accepted";
+    item.isReturned=true;
+    const allItemsReturned = order.items.every(item => item.isReturned);
+    order.status = allItemsReturned ? "returned" : "itemsReturned";
 
+    await order.save();
+     
     // Refund the stock
-    for (const item of order.items) {
+    
+        
       const product = await Book.findById(item.productId);
       if (!product) {
-        throw new Error(`Product with ID ${item.productId} not found`);
+       return res.status(404).json({success:false,message:`Product with ID ${item.productId} not found` });
       }
       product.stock += item.quantity;
       await product.save();
-    }
-
     
+    let wallet=await Wallet.findOne({userId:order.userId})
+    if(!wallet){
+       wallet=new Wallet({
+        userId:order.userId,
+        balance:0,
+        transactions:[]
 
+       })
+    }
+    
+    const remainingItems = order.items.filter(item => !item.isReturned); 
+    const updatedSubtotal = remainingItems.reduce((sum, item) => sum + item.priceAtOrder * item.quantity, 0);
+    const updatedTotal= Math.max(0, updatedSubtotal + order.shipping -order.discount)
+    const refundAmount = item.priceAtOrder * item.quantity 
+    order.subtotal=updatedSubtotal
+    order.total=updatedTotal;
+
+    wallet.balance+=refundAmount;
+    wallet.transactions.push({
+        amount:refundAmount,
+        transactionType:'credit',
+        date:new Date(),
+        orderId:order._id,
+        message: 'Credited for returned product',
+    })
+    await wallet.save()
+ 
     res.json({ success: true, message: "Return request accepted successfully" });
+    
   } catch (error) {
     console.error("Error accepting return request:", error);
     res.status(500).json({ success: false, message: "Server error" });
@@ -871,21 +1386,23 @@ const acceptReturn = async (req, res) => {
 const rejectReturn = async (req, res) => {
   try {
     const { orderId } = req.params;
+    const {itemId}=req.body
 
     // Find the order
-    const order = await Order.findById(orderId);
+    const order = await Order.findById(orderId).populate('items.productId');
     if (!order) {
       return res.status(404).json({ success: false, message: "Order not found" });
     }
 
-    // Validate order status
-    if (order.status !== "returnRequested") {
-      return res.status(400).json({ success: false, message: "Return request is not valid" });
-    }
+     const item = order.items.find(item => item._id.toString() === itemId);
+        if (!item) return res.status(404).json({ success: false, message: "item not found" })
+        if (item.returnStatus !== 'requested') return res.status(400).json({ success: false, message: "return req is not valide" });
+
+    
 
     // Update the order status
     order.status = "delivered";
-    order.returnStatus = "rejected";
+    item.returnStatus = "rejected";
     order.updatedAt = new Date();
     await order.save();
 
@@ -909,13 +1426,27 @@ module.exports = {
     postLogin,
     getOrders,
     orderStatus,
+    getCoupons,
+    getCreateCoupon,
+    createCoupon,
+    getEditCoupon,
+    updateCoupon,
+    deactivateCoupon,
+    getOffers,
+    getCreateOffer,
+    createOffer,
+    getEditOffer,
+    editOffer,
+    deactivateOffer,
     getDashboardData,
     renderDashboard,
-    getDeliveredSalesReport,
-    downloadSalesReport,
-    filterSalesReport,
+    getReturnOrders,
     acceptReturn,
     rejectReturn,
+    renderSalesReport,
+    getSalesReport,
+    downloadExcel,
+    downloadPdf,
 };
 
 
