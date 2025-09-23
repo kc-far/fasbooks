@@ -223,6 +223,7 @@ const renderCheckout = async (req, res) => {
 };
 const getCartItems = async (req, res) => {
     const userId = req.session.user?.id;
+    console.log('userId from',userId)
 
     try {
         const cart = await Cart.findOne({ userId }).populate('items.productId');
@@ -318,8 +319,9 @@ const getCartItems = async (req, res) => {
 };
 const validateCoupon = async (req, res) => {
     const { couponCode, subtotal } = req.body;
+    const userId = req.session.user?.id;
     try {
-        const coupon = await Coupon.findOne({ code: couponCode, isActive: true });
+        const coupon = await Coupon.findOne({ code: couponCode, isActive: true ,$or: [{ userId: userId }, { userId: null }],});
 
         if (!coupon) {
             return res.status(400).json({ message: 'Invalid or expired coupon' });
@@ -334,10 +336,15 @@ const validateCoupon = async (req, res) => {
             return res.status(400).json({ message: `Minimum order value for this coupon is ₹${coupon.minOrderValue}` });
         }
 
+        if (coupon.isFirstOrder) {
+            const orderCount = await Order.countDocuments({ userId });
+            if (orderCount > 0) {
+                return res.status(400).json({ message: 'Coupon valid only for your first order' });
+            }
+        }
+
         // Calculate discount
         let discount = (subtotal * coupon.discount) / 100;
-
-        // Apply max discount limit
         if (coupon.maxDiscountLimit && discount > coupon.maxDiscountLimit) {
             discount = coupon.maxDiscountLimit;
         }
@@ -346,6 +353,12 @@ const validateCoupon = async (req, res) => {
         let discountedTotal=subtotal-discount
         discountedTotal=Math.round(discountedTotal)
 
+        coupon.usageLimit -= 1;
+        if (coupon.usageLimit <= 0) {
+            coupon.isActive = false;
+        }
+        await coupon.save();
+
         res.json({ discountedTotal, discount, message: 'Coupon applied successfully' });
     } catch (error) {
         console.error('Error validating coupon:', error);
@@ -353,18 +366,34 @@ const validateCoupon = async (req, res) => {
     }
 }
 const getAvailableCoupons = async (req, res) => {
+  const userId = req.session.user?.id;
+  
     try {
-        const coupons = await Coupon.find({ isActive: true });
+      const currentDate = new Date();
+      const orderCount = await Order.countDocuments({ userId });
+
+        const coupons = await Coupon.find({ isActive: true,
+          validFrom: { $lte: currentDate },
+          validUntil: { $gte: currentDate },
+          $or: [{ userId: userId }, { userId: null }],
+          ...(orderCount > 0 ? { isFirstOrder: { $ne: true } } : {})
+         });
 
         if (!coupons || coupons.length === 0) {
             return res.status(404).json({ message: 'No coupons available' });
         }
 
-        // Map required fields only (e.g., code and description)
+        
+
         const availableCoupons = coupons.map(coupon => ({
             code: coupon.code,
-            description: `${coupon.discount}% OFF - Min Order ₹${coupon.minOrderValue}`
+            description: `${coupon.discount}% OFF - Min Order ₹${coupon.minOrderValue} `,                       
+            // minOrderValue: coupon.minOrderValue,
+            // isFirstOrder: coupon.isFirstOrder,
+            userId: coupon.userId ? coupon.userId : null
         }));
+        console.log('Available coupons for user:', { userId, coupons: availableCoupons, sessionId: req.sessionID });
+
 
         res.json({ coupons: availableCoupons });
     } catch (error) {

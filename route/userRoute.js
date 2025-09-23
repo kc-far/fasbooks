@@ -46,6 +46,7 @@ router.get('/profilePersonal', userAuth.checkSession, userController.getProfile)
 router.post('/editProfile',userAuth.checkSession,  userController.editProfile);
 router.get('/profileOrders', userAuth.checkSession, userController.getOrders)
 router.get('/orderDetails/:orderId',userAuth.checkSession,  userController.orderDetails)
+router.get('/referral-link', userAuth.checkSession,userController.getReferralLink);
 
 // Address
 router.get('/profileAddress',userAuth.checkSession,userController.getAddress)

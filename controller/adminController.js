@@ -460,7 +460,7 @@ const getOrders = async (req, res) => {
         const totalPages = Math.ceil(totalOrders / limit); // Calculate total pages
 
        
-
+    console.log(orders)
         // Render the EJS view and pass the orders data, current page, and total pages
         res.render('admin/orders', { orders, currentPage: page, totalPages }); // Make sure 'admin/orders' matches your EJS view file
     } catch (error) {
@@ -523,6 +523,16 @@ const orderStatus = async (req, res) => {
 const getCoupons = async (req, res) => {
     try {
         const { message, error } = req.query;
+        const currentDate = new Date();
+
+        // Deactivate expired coupons
+        await Coupon.updateMany(
+            { 
+                isActive: true, 
+                validUntil: { $lt: currentDate } 
+            },
+            { $set: { isActive: false } }
+        );
         const coupons = await Coupon.find();
         res.render('admin/coupons', { coupons ,message, error});
     } catch (error) {

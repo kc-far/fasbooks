@@ -24,8 +24,13 @@ const checkSession = (req, res, next) => {
 };
 
 const isLogin = (req, res, next) => {
+  console.log('Path:', req.path, 'Session User:', req.session.user, 'Query Ref:', req.query.ref);
+   if (req.session.user && req.path === '/signup' && req.query.ref) {
+        return next();
+    }
   // Prevent infinite loop by allowing access to home and logout pages
-  if (req.session.user && req.path !== '/home' && req.path !== '/logout') {
+  //if (req.session.user && req.path !== '/home' && req.path !== '/logout') {
+  if (req.session.user && !['/login', '/signup', '/verify-otp', '/logout'].includes(req.path)) {
       return res.redirect('/home');
   }
   next();

@@ -57,7 +57,7 @@
                                                     <tr>
                                                         <td><%= index + 1 + (currentPage - 1) * 5 %></td>
                                                         <td><%= order.OrderId %></td>
-                                                        <td><%= order.userId.name %></td>
+                                                        <td><%= order.userId ? order.userId.name : 'N/A' %></td>
                                                         <td><%= order.items[0].productId.title %></td>
                                                         <td><%= order.items[0].quantity %></td>
                                                         <td><%= order.paymentMethod %></td>
@@ -112,8 +112,8 @@
                                                                                     <h5>Customer Information</h5>
                                                                                 </div>
                                                                                 <div class="card-body">
-                                                                                    <p><strong>Name:</strong> <%= order.userId.name %></p>
-                                                                                    <p><strong>Email:</strong> <%= order.userId.email %></p>
+                                                                                    <p><strong>Name:</strong> <%=order.userId ? order.userId.name:'N/A' %></p>
+                                                                                    <p><strong>Email:</strong> <%=order.userId ? order.userId.email:'N/A' %></p>
                                                                                     <p><strong>Ordered Date:</strong> <%= order.createdAt.toLocaleDateString() %></p>
                                                                                     <p><strong>Delivery Status:</strong> 
                                                                                         <span class="badge badge-warning" style="font-size: 1.1em;"><%= order.status %></span>

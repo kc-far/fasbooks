@@ -139,7 +139,17 @@ body {
 h4{
     color: #000;
 }
-
+#area-link{
+    width: 760px;
+    height: 180px;
+    margin-left: 515px;
+    padding-left: 8px;
+}
+#area-link p{
+    font-size:18px;
+    font-weight: 500;
+    margin-bottom: 8px;
+}
 #addressList::-webkit-scrollbar {
     width: 6px;
 }
