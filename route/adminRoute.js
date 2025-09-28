@@ -34,8 +34,9 @@ router.post('/logout', (req, res) => {
 router.post('/addBooks', upload.array('images', 3), adminController.addBooks);
 router.get('/products',adminAuth.adminAuth, adminController.getBooks);
 router.post('/editBooks',adminAuth.adminAuth, upload.array('images', 12), adminController.editBooks);
-router.post('/deleteBook',adminController.deleteBook)
-router.post('/activeBook',adminController.activeBook)
+router.post('/deleteBook',adminAuth.adminAuth,adminController.deleteBook)
+router.post('/remove-image',adminAuth.adminAuth,adminController.deleteImage)
+router.post('/activeBook',adminAuth.adminAuth,adminController.activeBook)
 
 //
 router.get('/orders',adminAuth.adminAuth,adminController.getOrders)

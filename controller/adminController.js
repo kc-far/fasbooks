@@ -266,7 +266,9 @@ const unblockUser = async (req, res) => {
 
 // Add books
 const addBooks = async (req, res) => {
+    
     try { 
+        
         const { title, author, description, price, stock, categoryId } = req.body;
         const images = req.files;
         
@@ -294,6 +296,7 @@ const addBooks = async (req, res) => {
        
 
         const existingBook = await Book.findOne({ title });
+        
         if (existingBook) {
           
             return res.status(409).json({ message: 'Book with this title already exists.' });
@@ -315,7 +318,10 @@ const addBooks = async (req, res) => {
         
 
         res.redirect('/admin/products?message=Book Added');
+        //res.json({success:true,message:"Product added Successfully"})
+        
     } catch (error) {
+        
         console.error('Error adding book:', error);
         res.redirect('/admin/products?error=Error Adding Book');
     }
@@ -357,11 +363,11 @@ const addBooks = async (req, res) => {
         }
     };
     
-  const editBooks = async (req, res) => {
+const editBooks = async (req, res) => {
   try {
     
     const { id, title, author, description, price, stock } = req.body;
-    const images = req.files; 
+    //const images = req.files||[]; 
 
     const book = await Book.findById(id);
     
@@ -378,22 +384,31 @@ const addBooks = async (req, res) => {
     book.stock = stock || book.stock;
 
     // Ensure 3 image slots
-    if(images && images.length>0) {
+    // if(images && images.length>0) {
         
-      images.forEach((image,index)=>{
-         if(image){
+    //   images.forEach((image,index)=>{
+    //      if(image){
            
-            const imagePath=path.join(__dirname, '../uploads', book.images[index])
-            if (fs.existsSync(imagePath)) {
-              fs.unlinkSync(imagePath)
+    //         const imagePath=path.join(__dirname, '../uploads', book.images[index])
+    //         if (fs.existsSync(imagePath)) {
+    //           fs.unlinkSync(imagePath)
               
-            }
-              book.images[index]=image.filename;
+    //         }
+    //           book.images[index]=image.filename;
               
-         }
-      });
-    }
+    //      }
+    //   });
+    // }
 
+    const images=[]
+    if(req.files && req.files.length>0){
+        for(i=0;i<req.files.length;i++){
+            images.push(req.files[i].filename)
+        }
+    }
+    if(images.length>0){
+        book.images.push(...images)
+    }
     
     await book.save();
    
@@ -404,6 +419,21 @@ const addBooks = async (req, res) => {
   }
 };
 
+const deleteImage= async (req, res) => {
+    const { bookId, index } = req.body;
+    try {
+        const book = await Book.findById(bookId);
+        if (!book || index < 0 || index >= book.images.length) {
+            return res.json({ success: false, error: 'Invalid book or image index' });
+        }
+        book.images.splice(index, 1); 
+        await book.save();
+        res.json({ success: true });
+    } catch (error) {
+        console.error(error);
+        res.json({ success: false, error: 'Server error' });
+    }
+};
     
 //soft delete book
 const deleteBook = async (req, res) => {
@@ -460,7 +490,7 @@ const getOrders = async (req, res) => {
         const totalPages = Math.ceil(totalOrders / limit); // Calculate total pages
 
        
-    console.log(orders)
+    
         // Render the EJS view and pass the orders data, current page, and total pages
         res.render('admin/orders', { orders, currentPage: page, totalPages }); // Make sure 'admin/orders' matches your EJS view file
     } catch (error) {
@@ -1420,6 +1450,7 @@ module.exports = {
     addBooks,
     getBooks,
     editBooks,
+    deleteImage,
     deleteBook,
     activeBook,
     login,
