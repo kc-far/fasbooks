@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -7,6 +8,8 @@
     <title>FAS-Admin</title>
     <!-- Include Cropper.js CSS -->
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.12/cropper.min.css" />
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.12/cropper.min.js"></script>
 
 <!-- Include Cropper.js JS -->
 
@@ -53,6 +56,37 @@
             background-color: #000000; /* Hover effect */
         }
     </style>
+    <style>
+  .image-upload-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 20px; /* Space between rows */
+  }
+  .image-upload-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 5px;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    
+    width: 100%;
+    max-width: 300px; /* Consistent width */
+    margin: 0 auto; /* Center align */
+  }
+  .img-preview {
+    max-width: 100%;
+    height: auto;
+    margin-bottom: 10px;
+  }
+  .cropper-container {
+    margin-top: 10px;
+  }
+  .cropper-container img {
+    max-width: 100%;
+    height: auto;
+  }
+</style>
 </head>
 <body>
     <div class="container-scroller">
@@ -97,7 +131,7 @@
                             
                             <!-- Modal for Adding New Book -->
                             <!-- Add New Book Modal -->
-                            <div class="modal fade" id="createProductModal" tabindex="-1" aria-labelledby="createProductModalLabel" aria-hidden="true">
+                            <div class="modal fade" id="createProductModal" tabindex="-1" aria-labelledby="createProductModalLabel" >
                                 <div class="modal-dialog">
                                     <div class="modal-content">
                                         <div class="modal-header">
@@ -161,7 +195,8 @@
                                         </div>
                                     </div>
                                 </div>
-                            </div>                       
+                            </div>
+ <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>                                                  
 <script>
     let cropperInstances = [];
 
@@ -171,9 +206,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const addBookForm = document.getElementById('addBookForm');
 
     // Listen for file changes on each input
-    const fileInputs = document.querySelectorAll('input[type=file][name=images]');
+    const fileInputs = document.querySelectorAll('input[type=file][name=images]'); 
     fileInputs.forEach((input, index) => {
-        input.addEventListener('change', function (event) {
+        input.addEventListener('change', function (event) {        
             const file = event.target.files[0]; // Get the first file selected
             if (file) {
                 const reader = new FileReader();
@@ -267,12 +302,12 @@ document.addEventListener('DOMContentLoaded', () => {
     // Image validation: Check that exactly 3 images have been selected
    const imagesSelected = Array.from(fileInputs).filter(input => input.files.length > 0).length;
 
-   if (imagesSelected < 3) {
-       document.getElementById('imagesError').textContent = 'All 3 images are required';
-       valid = false;
-    } else {
-       document.getElementById('imagesError').textContent = '';  // Clear error message when valid
-    }
+if (imagesSelected < 3) {
+    document.getElementById('imagesError').textContent = 'All 3 images are required';
+    valid = false;
+} else {
+    document.getElementById('imagesError').textContent = '';  
+}
 
 
     return valid;
@@ -281,25 +316,25 @@ document.addEventListener('DOMContentLoaded', () => {
     addBookForm.addEventListener('submit', async function (event) {
         event.preventDefault(); 
 
-        // Validate form before proceeding
+        
         if (!validateForm()) {
-            return; // Stop submission if validation fails
+            return; 
         }
 
         const formData = new FormData();
 
-        // Append other form fields
+        
         formData.append('title', document.getElementById('bookTitle').value);
         formData.append('author', document.getElementById('bookAuthor').value);
         formData.append('description', document.getElementById('bookDescription').value);
         formData.append('price', document.getElementById('bookPrice').value);
         formData.append('stock', document.getElementById('bookStock').value);
 
-        // Append the categoryId
+       
         const categoryId = document.getElementById('bookCategory').value;  // Get the selected categoryId
         formData.append('categoryId', categoryId);  // Append it to formData
 
-        // Array to hold promises for cropped images
+    
         const promises = cropperInstances.map((cropper, index) => {
             return new Promise((resolve) => {
                 if (cropper) {
@@ -307,7 +342,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         if (blob) {
                             formData.append('images', blob, `cropped-image-${index}.jpg`); // Ensure unique image names
                         }
-                        resolve(); // Resolve the promise when done
+                        resolve(); 
                     });
                 } else {
                     resolve(); // Resolve immediately if no cropper
@@ -315,16 +350,13 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         });
 
-        // Wait for all cropping promises to resolve
         await Promise.all(promises);
 
-            try {
-                const response = await fetch('/admin/addBooks', {
-                    method: 'POST',
-                    body: formData
-                });
-
-                if (response.ok) {
+        fetch('/admin/addBooks', {
+            method: 'POST',
+            body: formData
+        }).then(response => {
+            if (response.ok) {
                    Swal.fire({
                       icon: 'success',
                       title: 'Success!',
@@ -350,12 +382,9 @@ document.addEventListener('DOMContentLoaded', () => {
                         });
                     }
                 }
-            } catch (err) {
-                console.error('Fetch error:', err);
-            }
-       });
+        }).catch(err => console.error('Fetch error:', err));
     });
-
+});
 </script>
                             
 <div class="table-responsive">
@@ -380,7 +409,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         <td><%= book.title %></td>
                         <td><%= book.categoryId ? book.categoryId.name : 'No Category' %></td> <!-- Check if category is populated -->
                         <td>₹<%= book.price.toFixed(2) %></td>
-                        <td><%= book.stock %></td> <!-- Display stock value -->
+                        <td><%= book.stock.toFixed(0) %></td> <!-- Display stock value -->
                         <td>
                             <img src="/<%= book.images[0] %>" alt="<%= book.title %> Cover" style="width: 50px; height: auto;">
                         </td>
@@ -490,7 +519,7 @@ document.addEventListener('DOMContentLoaded', () => {
         
                
                 <!-- Edit Book Modal -->
-                <div class="modal fade" id="editProductModal" tabindex="-1" aria-labelledby="editProductModalLabel" aria-hidden="true">
+                <div class="modal fade" id="editProductModal" tabindex="-1" aria-labelledby="editProductModalLabel" >
                     <div class="modal-dialog">
                         <div class="modal-content">
                             <div class="modal-header">
@@ -498,7 +527,7 @@ document.addEventListener('DOMContentLoaded', () => {
                                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                             </div>
                             <div class="modal-body">
-                                <form action="/admin/editBooks" method="POST" enctype="multipart/form-data">
+                                <form action="/admin/editBooks" method="POST" enctype="multipart/form-data" id="editBookForm">
                                     <!-- Hidden input to hold book ID -->
                                     <input type="hidden" id="bookId" name="id">
                                 
@@ -527,26 +556,52 @@ document.addEventListener('DOMContentLoaded', () => {
                                     </div>
                                     <div class="mb-3">
                                         <label for="editBookStock" class="form-label">Stock</label>
-                                        <input type="number" class="form-control" id="editBookStock" name="stock" required step="0.01">
+                                        <input type="number" class="form-control" id="editBookStock" name="stock" required step="0">
                                     </div>
                                 
+                                   <!-- existing image with remove option -->
                                    
-                                    <div class="mb-3" id="existingImages">
-                                        <!-- JavaScript will inject current images here -->
-                                    </div>
-                                
+                                        <div class="mb-3 d-flex flex-column gap-3" id="existingImages">
+                                           
+
+                                        </div>
+                                   
+                                     
                                     <!-- Upload New Images -->
                                     
 <div class="mb-3">
   <label class="form-label">Upload New Images (Optional)</label>
-  <input type="file" id="eimg" class="form-control edit-image-input" name="images"  >
-  <input type="file"  id="eimg" class="form-control edit-image-input" name="images"  >
-  <input type="file"  id="eimg" class="form-control edit-image-input" name="images" >
+  
+  
+              <div class="image-upload-grid">
+              <div class="image-upload-container">
+                <img src="" alt="" id="editImgView1" class="img-preview mb-2">
+                <input class="form-control edit-image-input" type="file" name="eimages" id="eimg1" accept="image/png, image/jpeg, image/jpg" onchange="viewEditImage(event, 1)">
+                <div class="cropper-container" style="display: none;">
+                  <img id="editCroppedImg1" alt="Cropped Image">
+                  <button type="button" id="editSaveButton1" class="btn btn-primary mt-2">Save Crop</button>
+                </div>
+              </div>
+              <div class="image-upload-container">
+                <img src="" alt="" id="editImgView2" class="img-preview mb-2">
+                <input class="form-control edit-image-input" type="file" name="eimages" id="eimg2" accept="image/png, image/jpeg, image/jpg" onchange="viewEditImage(event, 2)">
+                <div class="cropper-container" style="display: none;">
+                  <img id="editCroppedImg2" alt="Cropped Image">
+                  <button type="button" id="editSaveButton2" class="btn btn-primary mt-2">Save Crop</button>
+                </div>
+              </div>
+              <div class="image-upload-container">
+                <img src="" alt="" id="editImgView3" class="img-preview mb-2">
+                <input class="form-control edit-image-input" type="file" name="eimages" id="eimg3" accept="image/png, image/jpeg, image/jpg" onchange="viewEditImage(event, 3)">
+                <div class="cropper-container" style="display: none;">
+                  <img id="editCroppedImg3" alt="Cropped Image">
+                  <button type="button" id="editSaveButton3" class="btn btn-primary mt-2">Save Crop</button>
+                </div>
+              </div>
+            </div>
+          
 </div>
-                                    <div id="image-preview-container" style="display: none;">
-                                        <h5>Crop the images:</h5>
-                                        <div id="imagePreviews"></div>
-                                    </div> 
+                                   
                                 
                                     <button type="submit" class="btn btn-primary">Save Changes</button>
                                 </form>
@@ -560,104 +615,377 @@ document.addEventListener('DOMContentLoaded', () => {
                         </div>
                         
                         <script>
-                            document.addEventListener('DOMContentLoaded', () => {
-                                const editProductModal = document.getElementById('editProductModal');
+                            
+                            // document.addEventListener('DOMContentLoaded', () => {
+                            //     const editProductModal = document.getElementById('editProductModal');
+                            //     editProductModal.addEventListener('show.bs.modal', (event) => {
+                            //         const button = event.relatedTarget;
                         
-                                editProductModal.addEventListener('show.bs.modal', (event) => {
-                                    const button = event.relatedTarget;
+                            //         const bookId = button.getAttribute('data-id');
+                            //         const bookTitle = button.getAttribute('data-title');
+                            //         const bookAuthor = button.getAttribute('data-author');
+                            //         const bookDescription = button.getAttribute('data-description');
+                            //         const bookPrice = button.getAttribute('data-price');
+                            //         const bookImages = JSON.parse(button.getAttribute('data-images'));
+                            //         const bookStock = button.getAttribute('data-stock');
                         
-                                    const bookId = button.getAttribute('data-id');
-                                    const bookTitle = button.getAttribute('data-title');
-                                    const bookAuthor = button.getAttribute('data-author');
-                                    const bookDescription = button.getAttribute('data-description');
-                                    const bookPrice = button.getAttribute('data-price');
-                                    const bookImages = JSON.parse(button.getAttribute('data-images'));
-                                    const bookStock = button.getAttribute('data-stock');
+                            //         document.getElementById('bookId').value = bookId;
+                            //         document.getElementById('editBookTitle').value = bookTitle;
+                            //         document.getElementById('editBookAuthor').value = bookAuthor;
+                            //         document.getElementById('editBookDescription').value = bookDescription;
+                            //         document.getElementById('editBookPrice').value = bookPrice;
+                            //         document.getElementById('editBookStock').value = bookStock;
                         
-                                    document.getElementById('bookId').value = bookId;
-                                    document.getElementById('editBookTitle').value = bookTitle;
-                                    document.getElementById('editBookAuthor').value = bookAuthor;
-                                    document.getElementById('editBookDescription').value = bookDescription;
-                                    document.getElementById('editBookPrice').value = bookPrice;
-                                    document.getElementById('editBookStock').value = bookStock;
-                        
-                                    const existingImagesContainer = document.getElementById('existingImages');
-                                    existingImagesContainer.innerHTML = '';
-                                    existingImagesContainer.classList.add('d-flex', 'flex-column', 'gap-3'); // Change to flex-column for vertical alignment
+                            //         const existingImagesContainer = document.getElementById('existingImages');
+                            //         existingImagesContainer.innerHTML = '';
+                            //         existingImagesContainer.classList.add('d-flex', 'flex-column', 'gap-3'); // Change to flex-column for vertical alignment
 
-                                    bookImages.forEach((image, index) => {
-                                        const imageElement = `
-                                            <div style="width: 100%; max-width: 150px"> <!-- Control width for consistent sizing -->
-                                            <img src="/${image}" alt="Book Image ${index + 1}" style="width: 100%; height: auto;">
-                                            </div>`;
-                                        existingImagesContainer.innerHTML += imageElement;
-                                    });
+                            //         bookImages.forEach((image, index) => {
+                            //             const imageElement = `
+                            //                 <div style="width: 100%; max-width: 150px"> <!-- Control width for consistent sizing -->
+                            //                 <img src="/${image}" alt="Book Image ${index + 1}" style="width: 100%; height: auto;">
+                            //                 <button type="button"onclick="removeImage('${bookId}', ${index})" class="btn btn-sm btn-dark "style="position: absolute;" >
+                            //                     x
+                            //                 </button>
+                            //                 </div>`;
+                            //             existingImagesContainer.innerHTML += imageElement;
+                            //         });
 
-
-                                });
+                            //     });
+  
+                            // })   
+                                // function removeImage(bookId, index){
+                                //     Swal.fire({
+                                //         title: 'Remove image?', icon: 'warning', showCancelButton: true, confirmButtonColor: '#3085d6',
+                                //         cancelButtonColor: '#d33', confirmButtonText: 'Yes', background: '#000', color: '#fff',
+                                //     }).then((result) => {
+                                //         if (result.isConfirmed) {
+                                //             fetch('/admin/remove-image', {
+                                //                 method: 'POST', 
+                                //                 headers: { 'Content-Type': 'application/json' }, 
+                                //                 body: JSON.stringify({ bookId, index }),
+                                //             })
+                                //             .then(response => response.json())
+                                //             .then(data => { 
+                                //                 if (data.success) window.location.reload(); 
+                                //                 else throw new Error(data.error || 'Failed to remove image'); })
+                                //             .catch(error => {
+                                //                  console.error('Error:', error);
+                                //                 Swal.fire({ icon: 'error', title: 'Error', text: error.message, confirmButtonColor: '#d33', background: '#000', color: '#fff' });
+                                //             });
+                                //         }
+                                //     });
+                                // }
                         
-                                document.querySelectorAll('input[type="file"]').forEach((input,index) => {
-    input.addEventListener('change', function() {
-        const imagePreviewContainer=document.getElementById('existingImages')
-        imagePreviewContainer.innerHTML += `<h5>New Image ${index + 1}:</h5>`;
+// document.querySelectorAll('input[type="file"]').forEach((input,index) => {
+//     input.addEventListener('change', function() {
+//         const imagePreviewContainer=document.getElementById('existingImages')
+//         imagePreviewContainer.innerHTML += `<h5>New Image Added</h5>`;
         
         
-        const file=this.file[0]
-        if(file){
+//         const file=this.file[0]
+//         if(file){
 
+        
+//         const reader = new FileReader();
+//         reader.onload = function(e) {
+//             const imageElement = `
+//                 <div class="col-sm-4 mb-3">
+//                     <img src="${e.target.result}" alt="Uploaded Image ${position}">
+//                 </div>`;
+//             //document.getElementById('existingImages').innerHTML += imageElement;
+//             imagePreviewContainer.innerHTML+=imageElement
+//         };
+//         reader.readAsDataURL(file);
+//     }
+//     });
+// });
+          
+//       // Function to preview single image
+//  function previewImage(input) {
+//     if (input.files && input.files[0]) {
+//         let reader = new FileReader();
+//         reader.onload = function (e) {
+//             // Clear previous images
+//             const previewContainer = document.getElementById('imagePreview');
+//             previewContainer.innerHTML = '';
+
+//             let img = document.createElement('img');
+//             img.src = e.target.result;
+//             img.style.width = '150px'; 
+//             img.style.height = '150px'; 
+//             img.style.objectFit = 'cover'; // Ensures aspect ratio is preserved
+//             img.style.border = '1px solid #ddd'; 
+//             img.style.borderRadius = '5px'; 
+
+//             previewContainer.appendChild(img);
+//         };
+//         reader.readAsDataURL(input.files[0]);
+//     }
+// }
+
+                        
+                              
+                            //});
+
+
+
+
+
+
+
+</script>
+<script>
+
+document.addEventListener('DOMContentLoaded', () => {
+  
+
+  
+  const imagePreviewContainer = document.getElementById('image-preview-container');
+  const imagePreviewsDiv = document.getElementById('imagePreviews');
+  if (!imagePreviewsDiv && imagePreviewContainer) {
+    console.error('Error: #imagePreviews element not found in the DOM');
+    return;
+  }
+
+  
+  let addCropperInstances = [];
+  const createProductModal = document.getElementById('createProductModal');
+  createProductModal.addEventListener('show.bs.modal', () => {
+   
+    addCropperInstances = [];
+    if (imagePreviewContainer) imagePreviewContainer.style.display = 'none';
+    if (imagePreviewsDiv) imagePreviewsDiv.innerHTML = '';
+  });
+
+  const addFileInputs = document.querySelectorAll('input[type="file"][name="eimages"]');
+  addFileInputs.forEach((input, index) => {
+    
+    input.addEventListener('change', function (event) {
+      
+      const file = event.target.files[0];
+      if (file) {
         
         const reader = new FileReader();
-        reader.onload = function(e) {
-            const imageElement = `
-                <div class="col-sm-4 mb-3">
-                    <img src="${e.target.result}" alt="Uploaded Image ${position}">
-                </div>`;
-            //document.getElementById('existingImages').innerHTML += imageElement;
-            imagePreviewContainer.innerHTML+=imageElement
-        };
-        reader.readAsDataURL(file);
-    }
-    });
-});
-          
-      // Function to preview single image
- function previewImage(input) {
-    if (input.files && input.files[0]) {
-        let reader = new FileReader();
-        reader.onload = function (e) {
-            // Clear previous images
-            const previewContainer = document.getElementById('imagePreview');
-            previewContainer.innerHTML = '';
-
-            let img = document.createElement('img');
-            img.src = e.target.result;
-            img.style.width = '150px'; // Fixed width
-            img.style.height = '150px'; // Fixed height
-            img.style.objectFit = 'cover'; // Ensures aspect ratio is preserved
-            img.style.border = '1px solid #ddd'; // Optional: Add a border for styling
-            img.style.borderRadius = '5px'; // Optional: Add rounded corners
-
-            previewContainer.appendChild(img);
-        };
-        reader.readAsDataURL(input.files[0]);
-    }
-}
-
-                        
-                                // Event listener for single image input
-                                document.getElementById('selImg').addEventListener('change', function() {
-                                    previewImage(this);
-                                });
-                            });
-                        </script>
-                        
-                        
-                        
+        reader.onload = (e) => {
+          if (imagePreviewsDiv) imagePreviewsDiv.innerHTML = '';
+          const img = document.createElement('img');
+          img.src = e.target.result;
+          img.style.maxWidth = '100%';
+          img.id = `addImagePreview${index + 1}`;
+          if (imagePreviewsDiv) imagePreviewsDiv.appendChild(img);
+          img.onload = () => {
+            
+            if (addCropperInstances[index]) addCropperInstances[index].destroy();
+            addCropperInstances[index] = new Cropper(img, {
+              viewMode: 1,
+              ready() {
                 
-            
-            
+                addCropperInstances[index] = this;
+              }
+            });
+            if (imagePreviewContainer) imagePreviewContainer.style.display = 'block';
+          };
+          img.onerror = () => console.error('Error loading add image');
+        };
+        reader.onerror = () => console.error('Error reading add file');
+        reader.readAsDataURL(file);
+      }
+    });
+  });
+
+  // Edit Product 
+  const editProductModal = document.getElementById('editProductModal');
+  let editCropperInstances = [];
+  editProductModal.addEventListener('show.bs.modal', (event) => {
+    
+    const button = event.relatedTarget;
+    const bookId = button.getAttribute('data-id');
+    const bookTitle = button.getAttribute('data-title') || '';
+    const bookAuthor = button.getAttribute('data-author') || '';
+    const bookDescription = button.getAttribute('data-description') || '';
+    const bookPrice = button.getAttribute('data-price') || '';
+    const bookStock = button.getAttribute('data-stock') || '';
+    const bookImages = JSON.parse(button.getAttribute('data-images') || '[]');
+    
+
+    document.getElementById('bookId').value = bookId;
+    document.getElementById('editBookTitle').value = bookTitle;
+    document.getElementById('editBookAuthor').value = bookAuthor;
+    document.getElementById('editBookDescription').value = bookDescription;
+    document.getElementById('editBookPrice').value = bookPrice;
+    document.getElementById('editBookStock').value = bookStock;
+    
+
+    const existingImagesContainer = document.getElementById('existingImages');
+    existingImagesContainer.innerHTML = '';
+    existingImagesContainer.classList.add('d-flex', 'flex-column', 'gap-3');
+    
+    bookImages.forEach((image, index) => {
+      existingImagesContainer.innerHTML += `
+        <div style="width: 100%; max-width: 150px; position: relative;">
+          <img src="/${image}" alt="Book Image ${index + 1}" style="width: 100%; height: auto; object-fit: cover;">
+          <button type="button" onclick="removeImage('${bookId}', ${index})" class="btn btn-sm btn-dark" style="position: absolute; ">
+            x
+          </button>
+        </div>`;
+    });
+    
+
+    editCropperInstances = []; 
+    
+  });
+
+
+
+  const editFileInputs = document.querySelectorAll('.edit-image-input');
+  editFileInputs.forEach((input) => {
+    
+    input.addEventListener("change", (event) => {
+      const index = input.id.replace("eimg", "");
+      viewEditImage(event, index);
+    });
+  });
+
+  //  form submission 
+  
+  const editBookForm = document.getElementById('editBookForm');
+  editBookForm.addEventListener('submit', async function (event) {
+    
+    event.preventDefault();
+    const formData = new FormData();
+    
+    formData.append('id', document.getElementById('bookId').value);
+    formData.append('title', document.getElementById('editBookTitle').value);
+    formData.append('author', document.getElementById('editBookAuthor').value);
+    formData.append('description', document.getElementById('editBookDescription').value);
+    formData.append('price', document.getElementById('editBookPrice').value);
+    formData.append('stock', document.getElementById('editBookStock').value);
+    
+
+    editFileInputs.forEach((input, index) => {
+      if (input.files.length > 0) {
         
-            <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.12/cropper.min.js"></script>
+        formData.append('images', input.files[0]);
+      }
+    });
+
+    
+    try {
+      
+      const response = await fetch('/admin/editBooks', { method: 'POST', body: formData });
+      
+      if (response.ok) {
+        
+        Swal.fire({
+          icon: 'success', title: 'Success!', text: 'Book updated successfully!', confirmButtonColor: '#3085d6'
+        }).then(() => location.reload());
+      } else {
+        const errorText = await response.text();
+        if (response.status === 409) {
+          Swal.fire({ icon: 'warning', title: 'Duplicate Entry', text: 'A book with this name already exists.', confirmButtonColor: '#d33' });
+        } else {
+          Swal.fire({ icon: 'error', title: 'Oops!', text: errorText || 'Error updating book.', confirmButtonColor: '#d33' });
+        }
+      }
+    } catch (err) {
+      console.error('Fetch error:', err);
+      Swal.fire({ icon: 'error', title: 'Oops!', text: 'Network error occurred.', confirmButtonColor: '#d33' });
+    }
+  });
+
+ 
+});
+  function viewEditImage(event, index) {
+    
+    const input = event.target;
+    const reader = new FileReader();
+    reader.onload = function () {
+      
+      const dataURL = reader.result;
+      const image = document.getElementById("editImgView" + index);
+      image.src = dataURL;
+
+      const cropper = new Cropper(image, {
+        aspectRatio: 4 / 6, // Rectangular ratio
+        cropBoxResizable: true, 
+        cropBoxWidth: 300, 
+        cropBoxHeight: 600, 
+        guides: true,
+        background: false,
+        autoCropArea: 1,
+        zoomable: true,
+      });
+
+      const cropperContainer = document.querySelector("#editCroppedImg" + index).parentNode;
+      cropperContainer.style.display = "block";
+      
+
+      const saveButton = document.querySelector("#editSaveButton" + index);
+      saveButton.addEventListener("click", async function () {
+        
+        const croppedCanvas = cropper.getCroppedCanvas({
+          width: 300, //  output width
+          height: 225 
+        });
+        const croppedImage = document.getElementById("editCroppedImg" + index);
+        croppedImage.src = croppedCanvas.toDataURL("image/jpeg", 1.0);
+
+        const timestamp = new Date().getTime();
+        const fileName = `cropped-img-${timestamp}-${index}.png`;
+
+        await croppedCanvas.toBlob((blob) => {
+          
+          const input = document.getElementById("eimg" + index);
+          const imgFile = new File([blob], fileName, { type: "image/png" });
+
+          const fileList = new DataTransfer();
+          fileList.items.add(imgFile);
+          input.files = fileList.files;
+        });
+
+        cropperContainer.style.display = "none";
+        cropper.destroy();
+        
+      });
+    };
+    reader.onerror = function () {
+      console.error('Error reading edit file');
+    };
+    
+    reader.readAsDataURL(input.files[0]);
+  }
+   function removeImage(bookId, index) {
+    Swal.fire({
+      title: 'Remove image?', icon: 'warning', showCancelButton: true, confirmButtonColor: '#3085d6',
+      cancelButtonColor: '#d33', confirmButtonText: 'Yes', background: '#000', color: '#fff',
+    }).then((result) => {
+      if (result.isConfirmed) {
+        fetch('/admin/remove-image', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ bookId, index }),
+        })
+          .then(response => response.json())
+          .then(data => { 
+            if (data.success){
+              
+              const existingImagesContainer = document.getElementById('existingImages');
+              const imageDiv = existingImagesContainer.querySelector(`div[data-index="${index}"]`);
+              if (imageDiv) {
+                imageDiv.remove();}
+             
+            }  
+            else throw new Error(data.error || 'Failed to remove image'); })
+          .catch(error => {
+            console.error('Error:', error);
+            Swal.fire({ icon: 'error', title: 'Error', text: error.message, confirmButtonColor: '#d33', background: '#000', color: '#fff' });
+          });
+      }
+    });
+  }
+</script>
+
+
+    
     <!-- Bootstrap JS (including Popper.js for modals) -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     

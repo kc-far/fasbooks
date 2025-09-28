@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <title>Create Offer</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <link rel="stylesheet" href="/assets/vendors/mdi/css/materialdesignicons.min.css">
+    <link rel="stylesheet" href="/assets/vendors/css/vendor.bundle.base.css">
+    <link rel="stylesheet" href="/assets/css/style.css">
+    <link rel="shortcut icon" href="/assets/images/favicon.png" />
+</head>
+<body>
+    <div class="container-scroller">
+        <%- include('partials/sidebar') %>
+        <%- include('partials/navbar') %>
+
+        <div class="container-fluid page-body-wrapper">
+            <div class="main-panel">
+                <div class="content-wrapper">
+                    <div class="row">
+                        <div class="col-12 grid-margin">
+                            <div class="card">
+                                <div class="card-body">
+                                    <h4 class="card-title">Create Offer</h4>
+                                    
+                                    <!-- Display error messages if they exist -->
+                                    <% if (error) { %>
+                                        <div class="alert alert-danger"><%= error %></div>
+                                    <% } %>
+                                    
+                                    <form action="/admin/updateOffer/<%= offer._id %>" method="POST">
+                                        <div class="form-group">
+                                            <label for="title">Offer Title</label>
+                                            <input type="text" class="form-control" id="title" name="title" value="<%= offer.title %>" required>
+                                        </div>
+                                    
+                                        <div class="form-group">
+                                            <label for="discount">Discount %</label>
+                                            <input type="number" class="form-control" id="discount" name="discount" value="<%= offer.discount %>" >
+                                        </div>
+                                    
+                                        <!-- Applicable Products Checkbox List -->
+                                        <div class="form-group">
+                                            <label>Applicable Products</label>
+                                            <div class="checkbox-container">
+                                                <% allProducts.forEach((product) => { %>
+                                                    <div class="form-check">
+                                                        <input class="form-check-input" type="checkbox" id="product-<%= product._id %>" name="applicableProducts[]" value="<%= product._id %>" 
+                                                               <%= offer.applicableProducts.some(pdt => pdt._id.equals(product._id)) ? 'checked' : '' %>>
+                                                        <label class="form-check-label" for="product-<%= product._id %>"><%= product.title %></label>
+                                                    </div>
+                                                <% }) %>
+                                            </div>
+                                        </div>
+                                    
+                                        <!-- Applicable Categories Checkbox List -->
+                                        <div class="form-group">
+                                            <label>Applicable Categories</label>
+                                            <div class="checkbox-container">
+                                                <% allCategories.forEach((category) => { %>
+                                                    <div class="form-check">
+                                                        <input class="form-check-input" type="checkbox" id="category-<%= category._id %>" name="applicableCategories[]" value="<%= category._id %>" 
+                                                               <%= offer.applicableCategories.some(ctgry => ctgry._id.equals(category._id)) ? 'checked' : '' %>>
+                                                        <label class="form-check-label" for="category-<%= category._id %>"><%= category.name %></label>
+                                                    </div>
+                                                <% }) %>
+                                            </div>
+                                        </div>
+                                    
+                                        <div class="form-group">
+                                            <label for="validFrom">Valid From</label>
+                                            <input type="date" class="form-control" id="validFrom" name="validFrom" value="<%= offer.validFrom.toISOString().split('T')[0] %>" required>
+                                        </div>
+                                    
+                                        <div class="form-group">
+                                            <label for="validUntil">Valid Until</label>
+                                            <input type="date" class="form-control" id="validUntil" name="validUntil" value="<%= offer.validUntil.toISOString().split('T')[0] %>" required>
+                                        </div>
+                                    
+                                        <div class="form-group">
+                                            <label for="isActive">Status</label>
+                                            <select class="form-control" id="isActive" name="isActive">
+                                                <option value="true" <%= offer.isActive ? 'selected' : '' %>>Active</option>
+                                                <option value="false" <%= !offer.isActive ? 'selected' : '' %>>Inactive</option>
+                                            </select>
+                                        </div>
+                                    
+                                        <button type="submit" class="btn btn-primary">Save Changes</button>
+                                    </form>
+                                    
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <%- include('partials/footer') %>
+                </div>
+            </div>
+        </div>
+        
+    </div>
+
+    <!-- SweetAlert2 for Confirmation Dialog -->
+    <script src="/assets/vendors/js/vendor.bundle.base.js"></script>
+    <script src="/assets/js/off-canvas.js"></script>
+    <script src="/assets/js/hoverable-collapse.js"></script>
+    <script src="/assets/js/misc.js"></script>
+    <script src="/assets/js/settings.js"></script>
+    <script src="/assets/js/todolist.js"></script>
+</body>
+</html>

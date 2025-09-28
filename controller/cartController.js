@@ -13,13 +13,12 @@ const Category = require('../models/categoryModel');
 const nodemailer = require('nodemailer');
 const sendOtpToEmail = require('../config/sendOtpToEmail');
 const Wishlist = require('../models/wishListModel')
-//const Offer = require('../models/offerModel')
+const Offer = require('../models/offerModel')
 
 const addToCart = async (req, res) => {
     const { productId } = req.params;
     const userId = req.session.user.id;
     
-
     try {
         let cart = await Cart.findOne({ userId });
         if (!cart) {
@@ -111,6 +110,7 @@ const getCart = async (req, res) => {
         res.status(500).send('Error fetching cart');
     }
 };
+
 //remove from cart
 const removeFromCart = async (req, res) => {
   const { productId } = req.body;
@@ -239,7 +239,6 @@ const updateCart = async (req, res) => {
 
 const addToCartFromWishlist = async (req, res) => {
     
-
     try {
         const { productId } = req.body;
         const userId = req.session.user.id;
@@ -280,7 +279,7 @@ const addToCartFromWishlist = async (req, res) => {
 
 
         // Redirect to the wishlist page or send a success response
-        res.redirect('/wishlist');
+       res.json({ success: true, message: "Product added to cart" });
     } catch (error) {
         console.error(error);
         res.status(500).json({ success: false, message: 'Error moving item to cart' });
