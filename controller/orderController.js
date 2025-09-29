@@ -77,7 +77,7 @@ const processCheckout = async (req, res) => {
                 priceAtOrder: product.price, // Snapshot of product price
             });
 
-            if (req.body.paymentMethod === 'cashOnDelivery') {
+            if (req.body.paymentMethod === 'cashOnDelivery'||req.body.paymentMethod === 'wallet') {
                 product.stock -= item.quantity;
                 await product.save();
             }
@@ -107,6 +107,22 @@ const processCheckout = async (req, res) => {
         const totalDiscount=offerDiscount+ couponDiscount;
         const shippingCost = subtotal > 1000 ? 0 : 99;
         const total = subtotal - totalDiscount + shippingCost;
+
+
+        if(req.body.paymentMethod=='wallet'){
+          const wallet = await Wallet.findOne({ userId });
+            if (!wallet || wallet.balance < total) {
+                return res.status(400).send('Insufficient wallet balance');
+            }
+
+             wallet.balance -= total;
+            wallet.transactions.push({
+                amount: total,
+                transactionType: 'debit',
+                message: 'Order payment',
+            });
+            await wallet.save();
+        }
 
 
          const userAddress = await Address.findOne({ userId });
@@ -772,7 +788,7 @@ const cancelItem=async (req,res)=>{
 
           cancelItem.isCancelled=true
           cancelItem.cancelledAt=new Date()
-
+console.log("after..",cancelItem)
           await Book.findByIdAndUpdate(productId,{
             $inc:{stock:cancelItem.quantity}
           })
@@ -786,13 +802,15 @@ const cancelItem=async (req,res)=>{
           }
           return sum
         },0)
+        console.log(subtotalUpdate)
         const updatedDiscount = subtotalUpdate * discountPercentage;
-        const totalUpdate=Math.max(0,subtotalUpdate+order.shipping-order.updatedDiscount)
-
+        const totalUpdate=Math.max(0,subtotalUpdate+order.shipping-updatedDiscount)
+       console.log(updatedDiscount)
+       console.log(totalUpdate)
         order.subtotal=subtotalUpdate
         order.discount = updatedDiscount
         order.total=totalUpdate
-
+console.log(order.total)
         if(order.items.every(item=>item.isCancelled)){
           order.status = 'cancelled'
           order.total = 0

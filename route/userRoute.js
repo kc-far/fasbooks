@@ -94,6 +94,8 @@ router.get('/orders/:orderId/invoice',userAuth.checkSession,orderController.getI
 
 //wallet
 router.get('/wallet',userAuth.checkSession, userController.getWallet)
+router.get('/walletBalance',userAuth.checkSession,userController.getWalletBalence)
+
 
 // Google Authentication
 router.get('/auth/google', passport.authenticate('google', { scope: ['profile', 'email'] }));

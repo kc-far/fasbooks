@@ -1180,6 +1180,22 @@ const getWallet = async (req, res) => {
         res.status(500).send('Server error');
     }
 };
+
+const getWalletBalence=async(req,res)=>{
+    try {
+         const userId = req.session.user.id;
+        const wallet = await Wallet.findOne({ userId });
+
+        if (!wallet) {
+            return res.status(404).json({ balance: 0 ,message: "Wallet not found"});
+        }
+
+        res.json({success: true,wallet, balance: wallet.balance });
+    } catch (error) {
+        console.error('Error fetching wallet balance:', error);
+        res.status(500).send('Internal server error');
+    }
+}
 const contactPage = (req, res) => {
     res.render('user/contact')
 }
@@ -1235,6 +1251,7 @@ module.exports = {
     addBooksWishlist,
     removeWishlist,
     getWallet,
+    getWalletBalence,
     contactPage,
     aboutPage,
     getReferralLink,
