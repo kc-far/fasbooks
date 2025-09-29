@@ -49,7 +49,7 @@
                     <button class="btn-num-product-up flex items-center justify-center" data-action="increase" data-product-id="<%= item.productId._id %>" <%= item.quantity >= 5 ? 'disabled' : '' %>>
                         <i class="fs-16 zmdi zmdi-plus"></i>
                     </button>
-                    <input class="mtext-104 cl3 txt-center num-product mx-2" type="number" name="quantity[<%= item.productId._id %>]" value="<%= item.quantity %>" readonly id="quantity-<%= item.productId._id %>" style="width: 60px;">
+                    <input class="mtext-104 cl3 txt-center num-product mx-2" type="number"  readonly id="quantity-<%= item.productId._id %>" value="<%= item.quantity %>" style="width: 60px;">
                     <button class="btn-num-product-down flex items-center justify-center" data-action="decrease" data-product-id="<%= item.productId._id %>">
                         <i class="fs-16 zmdi zmdi-minus"></i>
                     </button>
@@ -126,7 +126,48 @@
 	
 
 <script>
-    
+checkoutForm.addEventListener('submit', async (event) => {
+    event.preventDefault();
+
+    try {
+        const response = await fetch('/checkout', { method: 'GET', headers: { 'X-Requested-With': 'XMLHttpRequest' } });
+
+        if (!response.ok) {
+            throw new Error(`Server responded with status ${response.status}`);
+        }
+
+        const data = await response.json();
+
+        if (data.redirect) {
+            // Handle redirection for authentication or empty cart
+            window.location.href = data.redirect;
+        } else if (data.stockError) {
+            // Show stock errors
+            const items = data.outOfStockItems
+                .map((item) => `${item.name} (Available: ${item.availableStock}, Requested: ${item.requestedQuantity})`)
+                .join('\n');
+
+            Swal.fire({
+                icon: 'error',
+                title: 'Stock Issues',
+                text: `The following items have stock issues:\n\n${items}`,
+            });
+        } else {
+            // Validation passed, navigate to the checkout page
+            window.location.href = '/checkout';
+        }
+    } catch (error) {
+        console.error('Error during checkout validation:', error);
+
+        Swal.fire({
+            icon: 'error',
+            title: 'Error',
+            text: 'An unexpected error occurred. Please try again later.',
+        });
+    }
+});
+
+
 	document.querySelectorAll('.remove-item').forEach(button => {
         button.addEventListener('click', async (e) => {
 			console.log("Event target:", e.target);
@@ -164,7 +205,7 @@
                                 icon: 'success',
                                 title: 'Removed!',
                                 text: resultData.message,
-                            });
+                            }).then(()=>location.reload());
                         } else {
                             // Handle errors (e.g., product not found)
                             Swal.fire({
@@ -221,9 +262,9 @@
                         const productPriceElement = document.getElementById(`price-${productId}`);
                         const productTotalElement = document.getElementById(`total-price-${productId}`);
                         if (productPriceElement && productTotalElement) {
-                            const productPrice = parseFloat(productPriceElement.innerText.replace('$', ''));
+                            const productPrice = parseFloat(productPriceElement.innerText.replace('₹', ''));
                             const productTotalPrice = data.quantity * productPrice;
-                            productTotalElement.innerText = `$${productTotalPrice.toFixed(2)}`;
+                            productTotalElement.innerText = `₹${productTotalPrice.toFixed(2)}`;
                         }
 
                         updateCartTotal();
@@ -238,6 +279,14 @@
                         const increaseButton = document.querySelector(`button[data-product-id="${productId}"][data-action="increase"]`);
                         if (increaseButton) {
                             increaseButton.disabled = data.quantity >= 5;
+                            if (data.quantity >= 5){
+                                Swal.fire({
+                                   icon:'warning',
+                                   title:'Limit reached',
+                                   message:data.message
+                                })
+                            }
+                            
                         }
                     } else {
                         Swal.fire('Oops!', data.message, 'error');
@@ -259,18 +308,18 @@
             const productQuantityElement = row.querySelector('.num-product');
 
             if (productTotalElement && productNameElement && productQuantityElement) {
-                const productTotal = parseFloat(productTotalElement.innerText.replace('$', ''));
+                const productTotal = parseFloat(productTotalElement.innerText.replace('₹', ''));
                 const productName = productNameElement.innerText;
                 const productQuantity = parseInt(productQuantityElement.value);
                 total += productTotal;
 
-                subtotalDetails += `<li><span>${productName} (x${productQuantity}): $${productTotal.toFixed(2)}</span></li>`;
+                subtotalDetails += `<li><span>${productName} (x${productQuantity}): ₹${productTotal.toFixed(2)}</span></li>`;
             }
         });
 
         const subtotalElement = document.getElementById('subtotal');
         if (subtotalElement) {
-            subtotalElement.innerText = `$${total.toFixed(2)}`;
+            subtotalElement.innerText = `₹${total.toFixed(2)}`;
         }
 
         const subtotalDetailsElement = document.getElementById('subtotal-details');
@@ -278,15 +327,15 @@
             subtotalDetailsElement.innerHTML = subtotalDetails;
         }
 
-        const shippingCharge = total > 25 ? 0 : 5;
+        const shippingCharge = total > 1000 ? 0 : 99;
         const cartTotalElement = document.getElementById('cart-total');
         if (cartTotalElement) {
-            cartTotalElement.innerText = `$${(total + shippingCharge).toFixed(2)}`;
+            cartTotalElement.innerText = `₹${(total + shippingCharge).toFixed(2)}`;
         }
 
         const shippingInfoElement = document.getElementById('shipping');
         if (shippingInfoElement) {
-            shippingInfoElement.innerText = total > 25 ? 'Free Shipping!' : 'Standard $5 shipping charge will apply.';
+            shippingInfoElement.innerText = total > 1000 ? 'Free Shipping!' : 'Standard ₹99 shipping charge will apply.';
         }
     }
 </script>

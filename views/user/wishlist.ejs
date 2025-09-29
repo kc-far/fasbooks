@@ -15,133 +15,220 @@
 			</a>
 
 			<span class="stext-109 cl4">
-				Shoping Cart
+				Wishlist
 			</span>
 		</div>
 	</div>
 		
-
-	<!-- Shoping Cart -->
-	<style>
-.wishlist-grid {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 100px; /* Space between cards */
-    justify-content: center; /* Center the items */
-    padding: 59px 39px;/* Add padding to the left and right sides */
+<style>
+.wishlist-table-container {
+    padding: 15px 20px; /* Keep 15px top padding as requested */
+    max-width: 1400px; /* Increased from 1200px to widen the container */
+    margin: 0 auto;
 }
 
-.product-card {
-    width: calc(20% - 100px); /* 5 cards in a row with 20px gap */
-    max-width: 180px; /* Set a maximum width for smaller cards */
-    border: 1px solid #ddd;
-    border-radius: 5px;
+.wishlist-table {
+    width: 100%; /* Ensure table fills the container */
+    border-collapse: collapse;
+    background-color: #fff;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    border-radius: 8px;
     overflow: hidden;
-    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-    transition: transform 0.3s;
 }
 
-.product-card:hover {
-    transform: scale(1.02); /* Slight scale effect on hover */
+.wishlist-table th,
+.wishlist-table td {
+    padding: 25px; /* Keep height as is */
+    text-align: left;
+    border-bottom: 1px solid #ddd;
+    vertical-align: middle;
 }
 
-.product-image-wrapper {
-    height: 250px; /* Height adjusted for book covers */
-    overflow: hidden; /* Hide overflow */
+.wishlist-table th {
+    background-color: #f8f9fa;
+    font-weight: 600;
+    color: #333;
 }
 
-.product-image {
-    width: 100%; /* Make the image fill the container */
-    height: 100%; /* Fixed height */
-    object-fit: cover; /* Maintain aspect ratio, crop if necessary */
+.wishlist-table td {
+    vertical-align: middle;
 }
 
-.card-body {
-    padding: 10px; /* Reduced padding for card body */
+.wishlist-table img {
+    width: 140px; /* Wider image for more column width */
+    height: 180px; /* Keep height */
+    object-fit: cover;
+    border-radius: 4px;
+    transition: opacity 0.3s;
+}
+
+.wishlist-table img:hover {
+    opacity: 0.9;
+}
+
+.wishlist-table .product-name a {
+    color: #333;
+    text-decoration: none;
+    font-size: 1.1em;
+    font-weight: 500;
+    max-width: 300px;
+    min-width: 400px; 
+    display: inline-block;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    /* white-space: nowrap; */
+}
+
+.wishlist-table .product-name a:hover {
+    color: #007bff;
+}
+
+.wishlist-table .product-price {
+    font-size: 1em;
+    font-weight: 600;
+    color: #555;
+    min-width: 200px; 
+}
+
+.wishlist-table .actions {
+    /* display: flex; */
+    gap: 15px;
+    width: 350px;
+}
+
+.wishlist-table .btn {
+    padding: 10px 18px; /* Keep button height */
+    font-size: 0.9em;
+    min-width: 120px; /* Wider buttons for actions column */
     text-align: center;
 }
 
-.card-title {
-    font-size: 1em; /* Adjust title size */
-    margin: 5px 0; /* Reduced margin */
-    color:black
+.wishlist-table .btn-primary {
+    background-color: #007bff;
+    border-color: #007bff;
 }
 
-.card-price {
-    font-size: 0.9em; /* Adjust price size */
-    color: #333; /* Price color */
+.wishlist-table .btn-danger {
+    background-color: #dc3545;
+    border-color: #dc3545;
 }
 
-.card-actions {
-    margin-top: 5px; /* Reduced top margin */
+.wishlist-table .btn:hover {
+    opacity: 0.9;
 }
 
-/* Additional styles to prevent single item from stretching */
-.wishlist-grid:only-child {
-    justify-content: center; /* Center the single item */
+/* Empty wishlist styling */
+.empty-wishlist-message {
+    text-align: center;
+    padding: 40px 20px;
+    color: #666;
+    font-size: 1.2em;
 }
 
-.wishlist-grid > .product-card {
-    flex: 1 1 auto; /* Allow single card to grow to fill space */
-    min-width: 180px; /* Minimum width for single card */
+/* Responsive design */
+@media (max-width: 1400px) {
+    .wishlist-table-container {
+        max-width: 1200px; /* Scale down at larger breakpoint */
+    }
+    .wishlist-table img {
+        width: 140px;
+    }
+    .wishlist-table .product-name a {
+        max-width: 180px;
+    }
+    .wishlist-table .btn {
+        min-width: 110px;
+    }
 }
 
+@media (max-width: 992px) {
+    .wishlist-table th,
+    .wishlist-table td {
+        padding: 18px;
+    }
+    .wishlist-table img {
+        width: 120px;
+    }
+    .wishlist-table .product-name a {
+        max-width: 150px;
+    }
+    .wishlist-table .btn {
+        min-width: 100px;
+        padding: 8px 15px;
+    }
+}
+
+@media (max-width: 768px) {
+    .wishlist-table th,
+    .wishlist-table td {
+        padding: 12px;
+    }
+    .wishlist-table img {
+        width: 90px;
+    }
+    .wishlist-table .product-name a {
+        max-width: 120px;
+    }
+    .wishlist-table .actions {
+        flex-direction: column;
+        gap: 5px;
+    }
+    .wishlist-table .btn {
+        width: 100%;
+    }
+}
 </style>
-    <div class="container">
-        <div class="row">
-            <div class="wishlist-grid">
-                <% if (wishlistItems.length > 0) { %>
-                    <% wishlistItems.forEach((item) => { 
-                        const product = item.productId; %>
-                        <div class="product-card wishlist-item" data-product-id="<%= product._id %>">
-                            <div class="product-image-wrapper">
-                                <a href="/product-detail/<%= product._id %>">
-                                    <img src="<%= product.images[0] %>" class="product-image" alt="<%= product.title %>">
-                                </a>
-                            </div>
-                            <div class="card-body">
-                                <h3 class="card-title">
+
+<div class="container">
+    <div class="row">
+        <div class="wishlist-table-container">
+            <% if (wishlistItems.length > 0) { %>
+                <table class="wishlist-table">
+                    <thead>
+                        <tr>
+                            <th>Image</th>
+                            <th>Name</th>
+                            <th>Price</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <% wishlistItems.forEach((item) => { 
+                            const product = item.productId; %>
+                            <tr class="wishlist-item" data-product-id="<%= product._id %>">
+                                <td>
+                                    <a href="/product-detail/<%= product._id %>">
+                                        <img src="<%= product.images[0] %>" alt="<%= product.title %>">
+                                    </a>
+                                </td>
+                                <td class="product-name">
                                     <a href="/product-detail/<%= product._id %>"><%= product.title %></a>
-                                </h3>
-                                <p class="card-price">
+                                </td>
+                                <td class="product-price">
                                     ₹<%= product.price.toFixed(2) %>
-                                </p>
-                                <div class="card-actions d-flex justify-content-center">
-                                    <!-- Move to Cart Button -->
+                                </td>
+                                <td class="actions">
                                     <button type="button" class="btn btn-primary move-to-cart" data-product-id="<%= product._id %>">
                                         Move to Cart
                                     </button>
-                                
-                                    <!-- Remove from Wishlist Button -->
                                     <button type="button" class="btn btn-danger remove-from-wishlist" data-product-id="<%= product._id %>">
                                         <i class="fas fa-heart-broken"></i> Remove
                                     </button>
-                                </div>
-                            </div>
-                        </div>
-                    <% }); %>
-                <% } else { %>
-                    <div class="empty-wishlist-message">
-                        <p>Your wishlist is empty. Start adding some items you love!</p>
-                    </div>
-                <% } %>
-            </div>
-            
+                                </td>
+                            </tr>
+                        <% }); %>
+                    </tbody>
+                </table>
+            <% } else { %>
+                <div class="empty-wishlist-message">
+                    <p>Your wishlist is empty. Start adding some items you love!</p>
+                </div>
+            <% } %>
         </div>
-        
     </div>
+</div>
     
-	<br>
-    <br>
-    <br>
-    <br>
-    <br>
-    <br>
-    <br>
-    <br>
-    <br>
-    <br>
-    <br>
+	
 		
 	<script>
         // SweetAlert for "Move to Cart" action with AJAX
@@ -159,18 +246,32 @@
                     confirmButtonText: "Yes, move it!"
                 }).then((result) => {
                     if (result.isConfirmed) {
-                        fetch('/addtocart/wishlist', {
+                        
+                            fetch('/addtocart/wishlist', {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
                             body: JSON.stringify({ productId: productId })
                             
-                        })
-                        .then(response => response.json())
-                        .then(data => {
-                            if (data.success) {
-                                Swal.fire("Moved!", "The item has been moved to your cart.", "success");
+                           }).then(response => response.json())
+                             .then(data => {
+                                console.log("Server response:", data)
+                                 if (data.success) {
+                                    Swal.fire({
+                                        icon: 'success',
+                                        title: 'Profile Updated',
+                                        text: 'Product Added to cart successfully!',
+                                        confirmButtonText: 'OK'
+                                    }).then(() => {
+                                        location.reload(); 
+                                    });
+                        
                             } else {
-                                Swal.fire("Error", "Unable to move item to cart.", "error");
+                                Swal.fire({
+                                    icon: 'error',
+                                    title: 'Add to cart',
+                                    text: data.error || 'Something went wrong. Please try again.',
+                                    confirmButtonText: 'OK'
+                                });
                             }
                         })
                         .catch(error => console.error('Error:', error));
@@ -212,7 +313,7 @@
         timer: 1500,
         showConfirmButton: false
     }).then(() => {
-        window.location.reload(); // ✅ Refresh the page
+        window.location.reload(); 
     });
 }
                         })
@@ -316,8 +417,6 @@
 					</div>
 				</div>	
 			</div>
-
-
 		</div>
 	</footer>
 

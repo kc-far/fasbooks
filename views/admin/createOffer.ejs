@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <title>Create Offer</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <link rel="stylesheet" href="/assets/vendors/mdi/css/materialdesignicons.min.css">
+    <link rel="stylesheet" href="/assets/vendors/css/vendor.bundle.base.css">
+    <link rel="stylesheet" href="/assets/css/style.css">
+    <link rel="shortcut icon" href="/assets/images/favicon.png" />
+</head>
+<body>
+    <div class="container-scroller">
+        <%- include('partials/sidebar') %>
+        <%- include('partials/navbar') %>
+    
+        <div class="container-fluid page-body-wrapper">
+            <div class="main-panel">
+                <div class="content-wrapper">
+                    <div class="row">
+                        <div class="col-12 grid-margin">
+                            <div class="card">
+                                <div class="card-body">
+                                    <h4 class="card-title">Create Offer</h4>
+    
+                                    <!-- Display messages -->
+                                    <% if (errorMessage) { %>
+                                        <div class="alert alert-danger">
+                                            <%= errorMessage %>
+                                        </div>
+                                    <% } %>
+                                    <% if (successMessage) { %>
+                                        <div class="alert alert-success">
+                                            <%= successMessage %>
+                                        </div>
+                                    <% } %>
+    
+                                    <form id="createOfferForm" action="/admin/createOffer" method="POST">
+                                        <div class="form-group">
+                                            <label for="title">Offer Title</label>
+                                            <input type="text" class="form-control" id="title" name="title" required>
+                                        </div>
+                                        <div class="form-group">
+                                            <label for="discount">Discount %</label>
+                                            <input type="number" class="form-control" id="discount" name="discount" min="0" max="100" required>
+                                        </div>
+    
+                                        <!-- Applicable Products -->
+                                        <!-- Applicable Products -->
+<div class="form-group">
+    <label>Applicable Products</label>
+    <div class="dropdown">
+        <button type="button" onclick="toggleDropdown('products')" class="btn btn-secondary dropdown-toggle">Select Products</button>
+        <div id="productsDropdown" class="dropdown-content">
+            
+            <% allProducts.forEach((product) => { %>
+                <label><input type="checkbox" name="applicableProducts[]" value="<%= product._id %>"><%= product.title %></label>
+            <% }) %>
+        </div>
+    </div>
+</div>
+
+<!-- Applicable Categories -->
+<div class="form-group">
+    <label>Applicable Categories</label>
+    <div class="dropdown">
+        <button type="button" onclick="toggleDropdown('categories')" class="btn btn-secondary dropdown-toggle">Select Categories</button>
+        <div id="categoriesDropdown" class="dropdown-content">
+            <input type="text" placeholder="Search categories..." id="categoriesSearch" class="form-control mb-2">
+            <% allCategories.forEach((category) => { %>
+                <label><input type="checkbox" name="applicableCategories[]" value="<%= category._id %>"><%= category.name %></label>
+            <% }) %>
+        </div>
+    </div>
+</div>
+
+    
+                                        <div class="form-group">
+                                            <label for="validFrom">Valid From</label>
+                                            <input type="date" class="form-control" id="validFrom" name="validFrom" required>
+                                        </div>
+                                        <div class="form-group">
+                                            <label for="validUntil">Valid Until</label>
+                                            <input type="date" class="form-control" id="validUntil" name="validUntil" required>
+                                        </div>
+                                        <div class="form-group">
+                                            <label for="isActive">Status</label>
+                                            <select class="form-control" id="isActive" name="isActive">
+                                                <option value="true">Active</option>
+                                                <option value="false">Inactive</option>
+                                            </select>
+                                        </div>
+                                        <button type="submit" class="btn btn-primary">Create Offer</button>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <%- include('partials/footer') %>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+    
+    <style>
+    .dropdown {
+        position: relative;
+        display: inline-block;
+    }
+    
+    .dropdown-content {
+        display: none;
+        position: absolute;
+        background-color: #000000;
+        min-width: 160px;
+        overflow-y: auto;
+        max-height: 200px;
+        border: 1px solid #ddd;
+        z-index: 1;
+    }
+    
+    .dropdown-content label {
+        display: block;
+        padding: 5px 10px;
+        cursor: pointer;
+    }
+    
+    .dropdown-content label:hover {
+        background-color: #000000;
+    }
+    
+    .show {
+        display: block;
+    }
+    
+    .selected-items {
+        width:100px;
+        margin-top: 5px;
+        padding: 5px;
+        border: 1px solid #000000;
+    }
+    
+    .selected-items div {
+        margin-bottom: 5px;
+    }
+    </style>
+    
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        $('#productsDropdown').select2({
+            placeholder: 'Select products',
+            closeOnSelect: false,
+        });
+    
+        $('#categoriesDropdown').select2({
+            placeholder: 'Select categories',
+            closeOnSelect: false,
+        });
+    });
+    
+    function toggleDropdown(id) {
+        document.getElementById(`${id}Dropdown`).classList.toggle("show");
+    }
+    
+    window.onclick = function(event) {
+        if (!event.target.matches('.dropdown button')) {
+            let dropdowns = document.getElementsByClassName("dropdown-content");
+            for (let i = 0; i < dropdowns.length; i++) {
+                let openDropdown = dropdowns[i];
+                if (openDropdown.classList.contains('show')) {
+                    openDropdown.classList.remove('show');
+                }
+            }
+        }
+    }
+    
+    document.querySelectorAll('.dropdown-content input[type="checkbox"]').forEach(checkbox => {
+        checkbox.addEventListener('change', function() {
+            const text = this.value;
+            const selectedItems = document.querySelector(`.${this.name.split('[')[0]}Selected`);
+            const existingItem = selectedItems.querySelector(`[data-value="${text}"]`);
+    
+            if (this.checked) {
+                if (!existingItem) {
+                    const selectedItem = document.createElement('div');
+                    selectedItem.setAttribute('data-value', text);
+                    selectedItem.innerText = text;
+                    selectedItems.appendChild(selectedItem);
+                }
+            } else {
+                if (existingItem) {
+                    existingItem.remove();
+                }
+            }
+        });
+    });
+    </script>
+    
+    <!-- SweetAlert2 for Confirmation Dialog -->
+    <script src="/assets/vendors/js/vendor.bundle.base.js"></script>
+    <script src="/assets/js/off-canvas.js"></script>
+    <script src="/assets/js/hoverable-collapse.js"></script>
+    <script src="/assets/js/misc.js"></script>
+    <script src="/assets/js/settings.js"></script>
+    <script src="/assets/js/todolist.js"></script>
+</body>
+</html>

@@ -62,6 +62,7 @@ app.set("view engine", "ejs");
 app.use('/', userRoute);
 app.use('/admin', adminRoute);
 
+
 // Catch-all route for undefined user routes
 app.use('/', (req, res, next) => {
     if (!req.route) {
