@@ -210,7 +210,7 @@ console.log(10)
 
         // Save temp user in session for OTP verification
         req.session.tempUser = { name, email, password, referredBy ,isReferralLink,};
-        console.log('Temp user set in session:', req.session.tempUser);
+        
 
         const otp = Math.floor(100000 + Math.random() * 900000).toString();
         req.session.otp = otp;
@@ -307,7 +307,7 @@ const resendOtp = async (req, res) => {
         await sendOtpToEmail(email, otp); 
         console.log(otp);
         
-        return res.status(200).json({ success: true, message: 'OTP resent successfully!' });
+        return res.status(200).json({ success: true, message: 'OTP resented successfully!' });
     } catch (error) {
         console.error('Error resending OTP:', error);
         return res.status(500).json({ success: false, message: 'Error resending OTP. Please try again.' });
@@ -326,7 +326,7 @@ const userLogin = async (req, res) => {
         const user = await User.findOne({ email: email, isAdmin: false });
 
         if (!user) {
-            // User not found
+            
             return res.render('user/login', { error: 'Invalid email or password.', message: "" });
         }
 
@@ -337,7 +337,6 @@ const userLogin = async (req, res) => {
 
         // Validate password
         const isMatch = await bcrypt.compare(password, user.password);
-        console.log(isMatch)
         if (!isMatch) {
             
             return res.render('user/login', { error: 'Invalid email or password.', message: "" });
@@ -354,23 +353,18 @@ const userLogin = async (req, res) => {
 
     } catch (error) {
         console.error("Login Error:", error);
-
-        // Handle unexpected errors
         return res.render('user/login', { error: 'An error occurred. Please try again.', message: "" });
     }
 };
 
-
 //google login
-
 const googleLogin = (req, res) => {
     if (req.isAuthenticated()) {
         if (req.user.isBlocked) {
             return res.render('user/login', { error: 'Your account is blocked', message: null });
         }
-
-        // Store user in session after successful authentication
-        req.session.user = { id: req.user._id }; // Ensure the ID is properly stored in the session
+        // Store user in session after successful authentication to Ensure the ID is properly stored in the session
+        req.session.user = { id: req.user._id };
         return res.redirect('/home');
     }
 
@@ -388,19 +382,17 @@ const getHome = async (req, res) => {
         // Fetch active products and populate their category
         const products = await Book.find({ isActive: true }).populate('categoryId', 'name');
         const wallet=await Wallet.find({userId});
-
         const offers = await Offer.find({ isActive: true });
-
-        const currentDate = new Date(); // Get the current date
+        const currentDate = new Date(); 
 
         const productsWithOffers = products.map(product => {
             let maxDiscountedPrice = product.price; // Start with the original price
             let hasDiscount = false;
         
             offers.forEach(offer => {
-                const isOfferActive = !offer.validUntil || offer.validUntil > currentDate; // Check if the offer is still valid
+                const isOfferActive = !offer.validUntil || offer.validUntil > currentDate; 
                 const isProductEligible = offer.applicableProducts.some(id => id.equals(product._id)); // Check if product ID is in applicableProducts
-                const isCategoryEligible = offer.applicableCategories.some(id => id.equals(product.categoryId?._id)); // Check if category ID is in applicableCategories
+                const isCategoryEligible = offer.applicableCategories.some(id => id.equals(product.categoryId?._id)); 
         
                 if (isOfferActive && (isProductEligible || isCategoryEligible)) {
                     const calculatedDiscountedPrice = product.price - (product.price * (offer.discount / 100));
@@ -415,8 +407,8 @@ const getHome = async (req, res) => {
         
             return {
                 ...product.toObject(),
-                discountedPrice: maxDiscountedPrice, // Final discounted price (if applicable)
-                hasDiscount // Indicates if any discount was applied
+                discountedPrice: maxDiscountedPrice, 
+                hasDiscount 
             };
         });
         
@@ -425,7 +417,7 @@ const getHome = async (req, res) => {
 
         // Fetch wishlist status
         const wishlistStatus = await Wishlist.find({ userId });
-        
+       
 
         // Render the page and pass categories, products with offers, and wishlist status to the view
         res.render('user/home', { 
@@ -433,7 +425,7 @@ const getHome = async (req, res) => {
             userId, 
             categories, 
             wallet, 
-            wishlistStatus: wishlistStatus.map(status => status.productId.toString()) // Convert IDs to strings for easy comparison
+            wishlistStatus: wishlistStatus.map(status => status.productId.toString()) 
         });
     } catch (error) {
         console.error('Error fetching home page data:', error);
@@ -463,22 +455,19 @@ const getLand = async (req, res) => {
 }
 
 //product page
-
 const getProducts = async (req, res) => {
     try {
         const { sort, category, search, page = 1 } = req.query;
-        const filter = { isActive: true }; // Only show active products
+        const filter = { isActive: true }; 
         const limit = 6;
         const skip = (page - 1) * limit;
-        const userId = req.session.user.id; // Assuming userId is stored in the session
-
+        const userId = req.session.user.id; 
 
         const cart = await Cart.findOne({ userId: userId }, { items: 1 });
-         const itemCount = cart ? cart.items.length : 0;
-        
-                if (category && category !== 'all') {
-                   filter.categoryId = category; // Ensure category field matches schema
-                }
+        const itemCount = cart ? cart.items.length : 0;       
+            if (category && category !== 'all') {
+                filter.categoryId = category; // Ensure category field matches schema
+            }
 
         if (search) {
             filter.title = new RegExp(search, 'i'); // Case-insensitive search on title
@@ -541,7 +530,7 @@ const getProducts = async (req, res) => {
             return {
                 ...product.toObject(),
                 discountedPrice: maxDiscountedPrice, // Final discounted price (if applicable)
-                hasDiscount // Indicates if any discount was applied
+                hasDiscount 
             };
         });
 
@@ -553,7 +542,7 @@ const getProducts = async (req, res) => {
                 currentPage: Number(page)
             });
         }
-
+        const wishlistStatus = await Wishlist.find({ userId });
         res.render('user/products', {
             products: productsWithOffers, // Pass updated products with discount info
             categories: await Category.find({ isActive: true }),
@@ -562,7 +551,8 @@ const getProducts = async (req, res) => {
             sort,
             category,
             search,
-            itemCount
+            itemCount,
+            wishlistStatus: wishlistStatus.map(status => status.productId.toString())
         });
     } catch (error) {
         console.error('Error fetching products:', error);
@@ -577,6 +567,7 @@ const getProducts = async (req, res) => {
 const getProductDetail = async (req, res) => {
     
     try {
+        const userId = req.session.user?.id;
         const productId = req.params.id; 
         
         if (!mongoose.isValidObjectId(productId)) {
@@ -609,11 +600,13 @@ const getProductDetail = async (req, res) => {
         };
         const products = await Book.find({ categoryId:product.categoryId._id,
                        _id:{$ne:productId}, isActive: true });
-       console.log('relatedProducts are...',products)
-
+       
+        const wishlistStatus = await Wishlist.find({ userId });
         res.render('user/product-detail', { 
             product: productWithOffer, 
-            products });
+            products ,
+            wishlistStatus: wishlistStatus.map(status => status.productId.toString())
+        });
 
     } catch (error) {
         console.error(error);
@@ -720,38 +713,29 @@ const editProfile = async (req, res) => {
         .status(401)
         .json( { success: false, error: 'User not found' });
     }
-
     const isMatch=await bcrypt.compare(currentPassword , user.password)
-    if(!isMatch){
+    if(currentPassword && !isMatch){
         return res.status(400).json({ success: false, error: 'Invalid current password' })
-
-    }
-    
+    }  
     if(email !==user.email){
         const userExist=await User.findOne({email})
         if(userExist){
             return res.status(400).json({ success: false, error: 'Email already in use' })
         }
     }
-
     user.name=name;
     user.email=email;
-
     if(newPassword){
         user.password=newPassword
     }
-
-     await user.save()
+    await user.save()
 
     req.session.user = {
     id: user._id,
     name: user.name,
     email: user.email
     };
-    return res.json({ success: true, message: "Profile updated successfully" });
-
-
-    
+    return res.json({ success: true, message: "Profile updated successfully" });  
   } catch (error) {
     console.error("Error updating profile:", error);
      res.status(500).json({success:false,error:'Internal Server Error'});
@@ -930,8 +914,8 @@ const getOrders = async (req, res) => {
         const userId = req.session.user.id;
          const { email } = req.session.user;
          const user = await User.findOne({ email });
-        const page = parseInt(req.query.page) || 1; // Current page number from query parameter
-        const limit = 3; // Number of orders per page
+        const page = parseInt(req.query.page) || 1; 
+        const limit = 3; 
         const search = req.query.search || '';
 
         const query = search ? { $or: [
@@ -941,9 +925,7 @@ const getOrders = async (req, res) => {
         // Query to get total number of orders
         const totalOrders = await Order.countDocuments(query);
         const totalPages = Math.ceil(totalOrders / limit);
-        
-        
-        
+         
         // Fetch orders for the current page with pagination and populate product details
         const orders = await Order.find({ userId })
             .sort({ createdAt: -1 })
@@ -951,8 +933,6 @@ const getOrders = async (req, res) => {
             .limit(limit)
             .populate('items.productId');
 
-        // Pass pagination data to the view
-        
         res.render('user/profileOrders', {
             orders,
             user,
@@ -968,24 +948,20 @@ const getOrders = async (req, res) => {
 const orderDetails=async(req,res)=>{
     try{
         const { email } = req.session.user;
-         const user = await User.findOne({ email });
-         const orderId = req.params.orderId
-         
-         const order = await Order.findById(orderId).populate('items.productId',"title images")
+        const user = await User.findOne({ email });
+        const orderId = req.params.orderId  
+        const order = await Order.findById(orderId).populate('items.productId',"title images")
             
         if(!order){
             return res.status(404).send('order not found')
-        }
-      
-     
-       res.render('user/orderDetails',{
-        user,
-        order,
-       })
+        } 
+        res.render('user/orderDetails',{
+           user,
+           order,
+        })
     }catch(err){
      console.error(err);
     }
-
 }
 // Send OTP for Forgot Password
 const forgotPassword = async (req, res) => {
@@ -999,12 +975,10 @@ const forgotPassword = async (req, res) => {
     const otp = Math.floor(100000 + Math.random() * 90000 ).toString();
     req.session.forgotPasswordOtp = otp;
     req.session.otpExpires = new Date(Date.now() + 60 * 1000); // OTP valid for 1 minute
-    req.session.userEmail = email; // Store the user's email in the session
+    req.session.userEmail = email; 
 
-    console.log(`OTP sent to ${email}: ${otp}`); // This will log the OTP
-
+    console.log(`OTP sent to ${email}: ${otp}`);
     await sendOtpToEmail(email, otp);
-    
     return res.render('user/verifyForgotPasswordOtp'); // Redirect to verify OTP page
 };
 
@@ -1070,7 +1044,7 @@ const getWishlistItems = async (req, res) => {
                 path: 'productId',
                 select: '_id title images price'
             })
-            .sort({ createdAt: -1 }) // Sort by most recent additions
+            .sort({ $natural: -1 }) // Sort by most recent additions
             .skip(skip)
             .limit(limit);
 

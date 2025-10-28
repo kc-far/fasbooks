@@ -153,8 +153,8 @@ const processCheckout = async (req, res) => {
             discount: totalDiscount,
             shipping: shippingCost,
             total,
-            status: 'pending',
-            paymentStatus: req.body.paymentMethod === 'razorpay' ? 'failed' : 'pending' // Set initial payment status
+            status:req.body.paymentMethod==='cashOnDelivery'?'pending':'paid',
+            paymentStatus: req.body.paymentMethod === 'razorpay' ? 'failed' : req.body.paymentMethod==='wallet'?'paid':'pending'// Set initial payment status
         });
 
         await newOrder.save();
@@ -239,7 +239,7 @@ const renderCheckout = async (req, res) => {
 };
 const getCartItems = async (req, res) => {
     const userId = req.session.user?.id;
-    console.log('userId from',userId)
+    
 
     try {
         const cart = await Cart.findOne({ userId }).populate('items.productId');
@@ -392,20 +392,18 @@ const getAvailableCoupons = async (req, res) => {
           validFrom: { $lte: currentDate },
           validUntil: { $gte: currentDate },
           $or: [{ userId: userId }, { userId: null }],
-          ...(orderCount > 0 ? { isFirstOrder: { $ne: true } } : {})
+          
          });
 
         if (!coupons || coupons.length === 0) {
             return res.status(404).json({ message: 'No coupons available' });
         }
 
-        
-
         const availableCoupons = coupons.map(coupon => ({
             code: coupon.code,
             description: `${coupon.discount}% OFF - Min Order ₹${coupon.minOrderValue} `,                       
-            // minOrderValue: coupon.minOrderValue,
-            // isFirstOrder: coupon.isFirstOrder,
+             minOrderValue: coupon.minOrderValue,
+             isFirstOrder: coupon.isFirstOrder,
             userId: coupon.userId ? coupon.userId : null
         }));
         console.log('Available coupons for user:', { userId, coupons: availableCoupons, sessionId: req.sessionID });
@@ -417,6 +415,7 @@ const getAvailableCoupons = async (req, res) => {
         res.status(500).json({ message: 'Internal server error' });
     }
 };
+
 //add new address
 const addNewAddress = async (req, res) => {
   
@@ -640,7 +639,17 @@ const retryPayment = async (req, res) => {
   
     try {
         const orderId = req.params.orderId;
-        const order = await Order.findById(orderId);
+        const order = await Order.findById(orderId).populate('items.productId');
+
+        for(const item of order.items){
+          const product=item.productId
+          if(!product){
+            return res.status(400).json({ success: false, message: `Product data missing for item ${item._id}` });         
+          }
+          if (product.stock < item.quantity) {
+            return res.status(400).json({ success: false, message: `Stock of "${product.title}" less than you orderd.[Available : ${product.stock}, You need: ${item.quantity}]` });
+          }
+        }
         
         // Assuming `razorpayOrderId` and `amount` are saved with the order
         res.json({
@@ -734,6 +743,7 @@ const returnOrder = async (req, res) => {
     
   }
 }
+
 const returnItem = async (req,res)=>{
   console.log('return item controller')
   const { orderId, productId } = req.params;
@@ -742,22 +752,23 @@ const returnItem = async (req,res)=>{
     try {
         const order = await Order.findById(orderId).populate('items.productId');
         
-            console.log('Requested productId:', productId, typeof productId);
+    console.log('Requested productId:', productId, typeof productId);
     console.log('Order Items:', order.items.map(item => ({
       productId: item.productId._id,
       stringified: item.productId._id.toString(),
       title: item.titleAtOrder
     })));
+
         if (!order) return res.status(404).json({ success: false, message: 'Order not found' });
         if (order.status !== 'delivered') return res.status(400).json({ success: false, message: 'Only delivered orders can be returned' })
         
         const returnItem=order.items.find(item => item.productId._id.toString() === productId)
         console.log('items is',returnItem)
-
         if(!returnItem)return res.status(404).json({ success: false, message: 'Product not found in this order' });
+
         if(returnItem.isReturned)return res.status(400).json({ success: false, message: 'Product has already been returned' });
 
-        order.status = 'returnRequested';
+        
         returnItem.returnReason=reason;
         returnItem.returnStatus='requested';
         returnItem.returnedAt=new Date()
@@ -772,6 +783,7 @@ const returnItem = async (req,res)=>{
         res.status(500).json({ success: false, message: "Server error" });
     }
 }
+
 const cancelItem=async (req,res)=>{
      const {orderId,productId}=req.params
      try{

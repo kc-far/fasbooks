@@ -56,7 +56,7 @@
                                 <i class="fas fa-copy"></i> Copy
                             </button>
                         </p>
-                        <button class="btn btn-primary btn-sm mt-3" onclick="toggleEditForm()">Edit Profile</button>
+                        <button id="edit-btn" class="btn btn-primary btn-sm mt-3"  onclick="toggleEditForm()">Edit Profile</button>
                     </div>
 
                     <!-- Hidden Form for Editing Profile -->
@@ -219,7 +219,7 @@ document.getElementById('editProfileForm').addEventListener('submit', function(e
       document.getElementById('emailCheck').textContent = 'Please enter a valid email';
       return;
     }
-    if (!currentPassword) {
+    if (newPassword&& !currentPassword) {
       document.getElementById('currentPassCheck').textContent = 'Current password is required';
       return;
     }

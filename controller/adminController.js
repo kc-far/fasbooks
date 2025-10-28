@@ -90,7 +90,7 @@ const getDashboardData = async (req, res) => {
                 dateFilter = {};
         }
 
-        const deliveredFilter = { status: 'delivered' };
+        //const deliveredFilter = { status: 'delivered' };
 
         const salesSummary = await Order.aggregate([
             { $match: { createdAt: dateFilter, status: 'delivered' } },
@@ -211,7 +211,8 @@ const adminUsers = async (req, res) => {
        
         const userData = await User.find({ isAdmin: false })
                                    .skip(skip)
-                                   .limit(limit);
+                                   .limit(limit)
+                                   .sort({$natural:-1 });
         const totalPages = Math.ceil(totalUsers / limit);
 
        
@@ -270,8 +271,7 @@ const addBooks = async (req, res) => {
     try { 
         
         const { title, author, description, price, stock, categoryId } = req.body;
-        const images = req.files;
-        
+        const images = req.files 
 
         if (!title || !author || !description || !price || !stock || !categoryId) {
             
@@ -289,11 +289,27 @@ const addBooks = async (req, res) => {
             return res.redirect('/admin/products?error=Stock must be a non-negative number');
         }
       
-        if (!images || images.length === 0) {
+        // if (!images || images.length === 0) {
             
-            return res.redirect('/admin/products?error=No Image Uploaded');
+        //     return res.redirect('/admin/products?error=No Image Uploaded');
+        // }
+        if (!images || !Array.isArray(images) || images.length !== 3) {
+            return res.status(400).json({ error: 'Exactly 3 images are required.' });
         }
-       
+        const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png'];
+        // const imagePaths = [];
+        
+        for (let i = 0; i < images.length; i++) {
+            const file = images[i];
+
+             if (!allowedTypes.includes(file.mimetype)) {
+               return res.status(400).json({
+                    error: `Image ${i + 1}: Only JPG or PNG allowed. Got ${file.mimetype}`
+               });
+            }
+
+            //imagePaths.push(`/uploads/${file.filename}`);
+        }
 
         const existingBook = await Book.findOne({ title });
         
@@ -301,8 +317,6 @@ const addBooks = async (req, res) => {
           
             return res.status(409).json({ message: 'Book with this title already exists.' });
         }
-        
-
         const newBook = new Book({
             title,
             author,
@@ -328,41 +342,56 @@ const addBooks = async (req, res) => {
 };
    
     
-    //show books
-    const getBooks = async (req, res) => {
-        
-        try {
-            const { message , error} = req.query;
-    
-            const page = parseInt(req.query.page) || 1; 
-            const limit = parseInt(req.query.limit) || 5; 
-            const skip = (page - 1) * limit; 
+const getBooks = async (req, res) => {
+    try {
+        const { message, error, search, page = 1, limit = 5 } = req.query;
+        const parsedPage = parseInt(page);
+        const parsedLimit = parseInt(limit);
+        const skip = (parsedPage - 1) * parsedLimit;
 
-            const books = await Book.find({})
-                .populate('categoryId')  
-                .skip(skip)
-                .limit(limit)
-            .sort({ createdAt: -1 });
-    
-            const totalBooks = await Book.countDocuments({ });
-            const totalPages = Math.ceil(totalBooks / limit); 
-            
-            res.render('admin/products', {
-                books,
-                message,
-                error,
-                currentPage: page,
-                totalPages,
-                limit,
-                categories: await Category.find({  }) 
-            });
-            
-        } catch (error) {
-            console.error('Error fetching books:', error);
-            res.status(500).send('Error fetching books');
+        //for search
+        const filter = {};
+        if (search) {
+            const regex = new RegExp(search, 'i');
+            const categories = await Category.find({ name: regex }).select('_id');
+            const categoryIds = categories.map(cat => cat._id);
+
+            filter.$or = [
+                { title: regex },
+                { author: regex },
+                { categoryId: { $in: categoryIds } }
+            ];
         }
-    };
+
+        // Fetch books with filter and pagination
+        const books = await Book.find(filter)
+            .populate({
+                path: 'categoryId',
+                select: 'name'
+            })
+            .skip(skip)
+            .limit(parsedLimit)
+            .sort({ createdAt: -1 });
+
     
+        const totalBooks = await Book.countDocuments(filter);
+        const totalPages = Math.ceil(totalBooks / parsedLimit);
+
+        res.render('admin/products', {
+            books,
+            message,
+            error,
+            search, 
+            currentPage: parsedPage,
+            totalPages,
+            limit: parsedLimit,
+            categories: await Category.find({ isActive: true }) //active categories while adding
+        });
+    } catch (error) {
+        console.error('Error fetching books:', error);
+        res.status(500).send('Error fetching books');
+    }
+};
 const editBooks = async (req, res) => {
   try {
     
@@ -383,22 +412,7 @@ const editBooks = async (req, res) => {
     book.price = price || book.price;
     book.stock = stock || book.stock;
 
-    // Ensure 3 image slots
-    // if(images && images.length>0) {
-        
-    //   images.forEach((image,index)=>{
-    //      if(image){
-           
-    //         const imagePath=path.join(__dirname, '../uploads', book.images[index])
-    //         if (fs.existsSync(imagePath)) {
-    //           fs.unlinkSync(imagePath)
-              
-    //         }
-    //           book.images[index]=image.filename;
-              
-    //      }
-    //   });
-    // }
+    
 
     const images=[]
     if(req.files && req.files.length>0){
@@ -563,7 +577,7 @@ const getCoupons = async (req, res) => {
             },
             { $set: { isActive: false } }
         );
-        const coupons = await Coupon.find();
+        const coupons = await Coupon.find().sort({createdAt:-1});
         res.render('admin/coupons', { coupons ,message, error});
     } catch (error) {
         console.error('Error fetching coupons:', error);
@@ -935,13 +949,11 @@ const getSalesReport = async (req, res) => {
             });
         }
 
-        let dateQuery={
-            status:'delivered'
-        }
+        let dateQuery={ paymentStatus:'paid'}
         const now = new Date();
 
         switch(reportType){
-            case 'dialy':
+            case 'daily':
                 dateQuery.createdAt={
                     $gte:new Date(now.setHours(0,0,0,0)),
                     $lte:new Date(now.setHours(23,59,59,999))
@@ -989,8 +1001,8 @@ const getSalesReport = async (req, res) => {
                                    .populate("userId", "name email")
                                    .populate("items.productId")
                                    .sort({ createdAt: -1 });
-
-        console.log("data is:", salesData);
+        
+      
         const summary = await calculateSalesSummary(salesData);
 
         // Return response
@@ -1014,7 +1026,7 @@ const downloadExcel= async (req,res)=>{
         const { reportType, startDate, endDate } = req.query;
         console.log('download query..',req.query)
 
-        let dateQuery={status:"delivered"}
+        let dateQuery={paymentStatus:'paid'}//{status:"delivered"}
         let now=new Date()
 
     switch (reportType) {
@@ -1138,7 +1150,7 @@ const downloadPdf=async (req,res)=>{
 
         // Construct date query
         const now = new Date();
-        let dateQuery = { status: "delivered" };
+        let dateQuery = {paymentStatus:'paid'}//{ status: "delivered" };
 
         switch (reportType) {
             case "daily":
@@ -1272,36 +1284,6 @@ const downloadPdf=async (req,res)=>{
 
 }
 
-// const getReturnOrders=async (req,res)=>{
-//     console.log(1)
-//        const { orderId } = req.params;
-//        cosole.log('orderId',orderId) 
-//        try{
-//         console.log(2)
-//         const page = parseInt(req.query.page) || 1; 
-//         const limit = 5; 
-//         const skip = (page - 1) * limit;
-//         console.log(3)
-//         const order=await Order.findById(orderId)
-//                   .populate('items.productId')
-//                   .populate('userId')
-//         console.log("order...",order)
-//         if (!order) return res.status(404).send('Order not found');
-
-//         const returnOrders=order.items.filter(item=>item.returnStatus=='requested')
-//                                       .sort((a, b) => new Date(b.returnedAt) - new Date(a.returnedAt));
-// console.log(4)
-//         const paginatedItems = returnOrders.slice(skip, skip + limit);                             
-//         const totalPages = Math.ceil(returnOrders.length/limit)
-//         console.log(5)
-//         return res.render('admin/returnOrders',{returnOrders:paginatedItems, currentPage: page, totalPages})
-//         console.log(6)
-//        }catch(err) {
-//           console.log(err)
-//           res.status(500).send('error occure while fetching return orders')
-//        }
-// }
-
 
 const getReturnOrders = async (req, res) => {
   
@@ -1345,13 +1327,11 @@ const acceptReturn = async (req, res) => {
   try {
        
     const order = await Order.findById(orderId).populate('items.productId');
-    console.log('oreders...:',order)
     if (!order) {
       return res.status(404).json({ success: false, message: "Order not found" });
     }
 
-   const item = order.items.find(item => item._id.toString() === itemId);
-   console.log('Received orderId:', orderId, 'itemId:', itemId)
+    const item = order.items.find(item => item._id.toString() === itemId);
     if (!item) return res.status(404).json({ success: false, message:'Item not found'});
     if (item.returnStatus !== 'requested') return res.status(400).send('Return request is not pending for this item');
 
@@ -1362,7 +1342,7 @@ const acceptReturn = async (req, res) => {
     item.returnStatus = "accepted";
     item.isReturned=true;
     const allItemsReturned = order.items.every(item => item.isReturned);
-    order.status = allItemsReturned ? "returned" : "itemsReturned";
+    order.status = allItemsReturned ? "returned" : "delivered";
 
     await order.save();
      
@@ -1386,11 +1366,23 @@ const acceptReturn = async (req, res) => {
        })
     }
     
+    const originalSubtotal = order.items.reduce((sum, item) => sum + item.priceAtOrder * item.quantity, 0);
+    const originalDiscount = order.discount || 0;
+    const discountPercentage = originalDiscount / originalSubtotal;
+    console.log(originalSubtotal)
+
+    const itemDiscount = (item.priceAtOrder * item.quantity / originalSubtotal) * originalDiscount;
+    const refundAmount = item.priceAtOrder * item.quantity - itemDiscount; 
+
     const remainingItems = order.items.filter(item => !item.isReturned); 
     const updatedSubtotal = remainingItems.reduce((sum, item) => sum + item.priceAtOrder * item.quantity, 0);
-    const updatedTotal= Math.max(0, updatedSubtotal + order.shipping -order.discount)
-    const refundAmount = item.priceAtOrder * item.quantity 
+    const updatedDiscount=updatedSubtotal * discountPercentage; 
+    const updatedTotal= Math.max(0, updatedSubtotal + order.shipping -updatedDiscount)
+    console.log(updatedSubtotal)
+    console.log(updatedTotal)
+
     order.subtotal=updatedSubtotal
+    order.discount = updatedDiscount;
     order.total=updatedTotal;
 
     wallet.balance+=refundAmount;
@@ -1479,29 +1471,3 @@ module.exports = {
     downloadExcel,
     downloadPdf,
 };
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

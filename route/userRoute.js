@@ -4,7 +4,6 @@ const router = express.Router();
 const userController = require('../controller/userController');
 const cartController = require('../controller/cartController')
 const orderController = require('../controller/orderController');
-//const checkoutController = require('../controller/checkoutController')
 const userAuth = require("../middleware/user/userAuth");
 const nocache = (req, res, next) => {
     res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, private');
@@ -14,14 +13,14 @@ const nocache = (req, res, next) => {
   };
 
 // Public Pages
-router.get('/', userController.getLand);
+router.get('/',userAuth.isLogin,userController.getLand);
 router.get('/about', userController.aboutPage);
 router.get('/contact', userController.contactPage);
 
 // Authentication Routes
 router.get('/login', userAuth.isLogin, userController.renderLoginPage);
 router.get('/signup', userAuth.isLogin, userController.renderSignupPage);
-router.post('/login', userController.userLogin);
+router.post('/login',userAuth.isLogin, userController.userLogin);
 router.post('/signup', userController.userSignup);
 router.post('/logout', userController.logout);
 
@@ -62,7 +61,7 @@ router.get('/product-detail/:id', userController.getProductDetail);
 router.get('/cart', userAuth.checkSession, cartController.getCart);
 router.post('/cart/add/:productId', userAuth.checkSession, cartController.addToCart);
 router.post('/removeFromCart', userAuth.checkSession, cartController.removeFromCart);
-router.post('/updateCart/:productId', userAuth.checkSession, cartController.updateCart);
+router.patch('/updateCart/:productId', userAuth.checkSession, cartController.updateCart);
 router.post('/addtocart/wishlist',userAuth.checkSession, cartController.addToCartFromWishlist)
 
 //wishlist

@@ -29,9 +29,9 @@ const isLogin = (req, res, next) => {
         return next();
     }
   // Prevent infinite loop by allowing access to home and logout pages
-  //if (req.session.user && req.path !== '/home' && req.path !== '/logout') {
-  if (req.session.user && !['/login', '/signup', '/verify-otp', '/logout'].includes(req.path)) {
-      return res.redirect('/home');
+  if (req.session.user && req.path !== '/home' && req.path !== '/logout') {
+  // if (req.session.user && !['/login', '/signup', '/verify-otp', '/logout'].includes(req.path)) {
+       return res.redirect('/home');
   }
   next();
 };

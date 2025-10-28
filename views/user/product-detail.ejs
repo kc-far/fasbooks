@@ -59,7 +59,7 @@
                             Help & FAQs
                         </a>
 
-                        <a href="profilePersonal" class="flex-c-m trans-04 p-lr-25">
+                        <a href="/profilePersonal" class="flex-c-m trans-04 p-lr-25">
                             Account
                         </a>
 
@@ -92,11 +92,7 @@
                             <li>
                                 <a href="/products">Books</a>
                             </li>
-
-                            
-                           
-
-                            <li>
+                           <li>
                                 <a href="/about">About</a>
                             </li>
 
@@ -417,12 +413,25 @@ p {
 							<% } %>
 						</form>
 						<!-- wishlist -->
-                        <form action="/wishlistAdd/<%= product._id %>" method="POST" id="wishlist-form-<%= product._id %>" class="me-2">
+                        <!-- <form action="/wishlistAdd/<%= product._id %>" method="POST" id="wishlist-form-<%= product._id %>" class="me-2">
 							<input type="hidden" name="productId" value="<%= product._id %>">
 							<button type="button" class="btn btn-outline-secondary py-2 ml-3 px-4 rounded wishlist-btn">
 								<i class="bi bi-bookmark"></i> wishlist
 							</button>
-						</form>	
+						</form>	 -->
+						<form action="/wishlistAdd/<%= product._id %>" method="POST" id="wishlist-form-<%= product._id %>" class="me-2">
+                                        <input type="hidden" name="productId" value="<%= product._id %>">
+                                        <button type="submit" class="btn <%= wishlistStatus.includes(product._id.toString()) ? 'btn-success wishlist-added' : 'btn-outline-dark' %> 
+											    py-2 px-4 me-2 ml-2 d-flex align-items-center wishlist-btn" 
+											    data-wishlisted="<%= wishlistStatus.includes(product._id.toString()) %>">
+                                            <% if (wishlistStatus.includes(product._id.toString())) { %>
+                                                <i class="bi bi-bookmark-heart-fill me-1"></i> Wishlisted
+				
+                                            <% } else { %>
+                                                <i class="bi bi-bookmark me-1"></i> Wishlist
+                                            <% } %>
+                                        </button>
+                                    </form>
 					   </div>
 							
 						<script>
@@ -447,9 +456,6 @@ p {
             });
 
             const data = await response.json(); // Parse the JSON response
-
-            console.log("Response data:", data); // Debugging message to check the response
-
             if (data.success) {
                 Swal.fire({
                     title: 'Success',
@@ -510,11 +516,10 @@ document.addEventListener('DOMContentLoaded', function() {
 			.then(response => response.json())
 			.then(data => {
 				if (data.success) {
-					// Change icon on success
 					button.innerHTML = '<i class="bi bi-bookmark-heart-fill me-1"></i> Wishlisted';
 					button.classList.add('wishlist-added');
-					button.disabled = true;
-
+					//button.disabled = true;
+                    window.location.reload()
 					// Show SweetAlert success message
 					Swal.fire({
 						icon: 'success',
@@ -536,8 +541,6 @@ document.addEventListener('DOMContentLoaded', function() {
 			})
 			.catch(error => {
 				console.error('Error:', error);
-
-				// Show SweetAlert for unexpected error
 				Swal.fire({
 					icon: 'error',
 					title: 'Unexpected Error',

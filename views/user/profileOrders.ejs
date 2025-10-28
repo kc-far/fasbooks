@@ -157,14 +157,28 @@ document.getElementById('orderSearch').addEventListener('input', function () {
                      button.addEventListener("click", async function (){
                         const orderId = this.getAttribute("data-order-id");
                         try {
-                            const response = await fetch(
-                            `/order-details/${orderId}`
-                          );
-                          if (!response.ok) {
-                            throw new Error("Failed to fetch order details");
-                          }
+                            const response = await fetch(`/order-details/${orderId}`);                       
+                            const data = await response.json();
 
-                          const data = await response.json();
+                          if (!response.ok) {
+                            if(data.message && data.message.includes('Stock of')){
+                                Swal.fire({
+                                    icon:'info',
+                                    title:"Try it Later",
+                                    text:`Sorry..! ${data.message}`,
+                                    confirmButtonText:'OK'
+
+                                })
+                            }else{
+                                Swal.fire({
+                                    icon: 'error',
+                                    title: 'Error',
+                                    text: data.message || 'Failed to fetch order details',
+                                    confirmButtonText: 'OK' 
+                                });
+                            }
+                            return
+                          }
 
                           const options = {
                             key:'rzp_test_R62uQRDG1HyxmG',

@@ -1,6 +1,6 @@
 const mongoose = require("mongoose");
 const Category = require("../models/categoryModel");
-
+const Book =require('../models/productModel')
 
 //category management
 const categoryManagement = async (req, res) => {
@@ -222,6 +222,7 @@ const deleteCategory = async (req, res) => {
       );
     }
     await Category.findByIdAndUpdate(categoryId, { isActive: false });
+    await Book.updateMany({ categoryId, isActive: true }, { isActive: false });
     //console.log("unlisted successfully")
     res.redirect(
       "/admin/category?message=Category deleted successfully"
@@ -240,6 +241,8 @@ const activeCategory = async (req, res) => {
       return res.status(400).send("Category ID is required");
     }
     await Category.findByIdAndUpdate(categoryId, { isActive: true });
+    await Book.updateMany({ categoryId, isActive: false }, { isActive: true });
+    
     res.redirect(
       "/admin/category?message=Category activated successfully"
     );

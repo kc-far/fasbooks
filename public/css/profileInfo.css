@@ -139,7 +139,7 @@ body {
 h4{
     color: #000;
 }
-#area-link{
+/* #area-link{
     width: 760px;
     height: 180px;
     margin-left: 515px;
@@ -149,7 +149,7 @@ h4{
     font-size:18px;
     font-weight: 500;
     margin-bottom: 8px;
-}
+} */
 #addressList::-webkit-scrollbar {
     width: 6px;
 }
@@ -189,3 +189,83 @@ h4{
         font-size: 24px;
     }
 }
+
+    #area-link {
+        width: 100%; 
+        max-width: 760px; 
+        height: auto; 
+        margin-left: auto; 
+        margin-right: auto; 
+        padding-left: 8px; 
+        padding-right: 8px; 
+        padding-bottom: 8px;
+    }
+
+    #area-link p {
+        font-size: 1.125rem; /* 18px equivalent in rem, scalable */
+        font-weight: 500;
+        margin-bottom: 8px;
+    }
+
+    
+    #area-link .input-group {
+        flex-wrap: wrap; 
+        width: 100%; 
+    }
+
+    #area-link .form-control {
+        flex-grow: 1; /* Input takes available space */
+    }
+
+    
+    @media (max-width: 576px) { /* Mobile */
+        #area-link {
+            padding-left: 4px; 
+            padding-right: 4px;
+        }
+
+        #area-link p {
+            font-size: 1rem; 
+        }
+
+        #area-link .input-group .form-control {
+            font-size: 0.875rem; 
+            margin-bottom: 0.5rem; /* Space between input and button */
+        }
+
+        #area-link .input-group-append .btn {
+            width: 100%; 
+            font-size: 0.875rem; 
+        }
+    }
+
+    @media (min-width: 577px) and (max-width: 991px) { /* Tablet */
+        #area-link {
+            max-width: 90%;
+        }
+
+        #area-link p {
+            font-size: 1.1rem; 
+        }
+
+        #area-link .input-group {
+            max-width: 100%; 
+        }
+    }
+
+    @media (min-width: 992px) { /* Desktop */
+        #area-link {
+            max-width: 980px; 
+            margin-left: 515px; 
+            margin-right: 0;
+
+        }
+
+        #area-link p {
+            font-size: 1.125rem; /* Original 18px */
+        }
+
+        #area-link .input-group {
+            max-width: 100%; /* Full width up to max-width of card */
+        }
+    }

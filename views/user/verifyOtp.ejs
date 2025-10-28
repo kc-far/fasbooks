@@ -94,6 +94,7 @@
         </div>
     </div>
     
+    <script src="https://unpkg.com/sweetalert/dist/sweetalert.min.js"></script>
     <script>
         document.addEventListener('DOMContentLoaded', function () {
             let countdown = parseInt(localStorage.getItem('otpCountdown')) || 60;
@@ -102,11 +103,11 @@
     
             // Check if countdown is still valid (i.e., greater than 0)
             if (countdown > 0) {
-                startTimer(); // Start the timer only if countdown is still valid
+                startTimer(); 
             } else {
-                countdown = 60; // Reset to 60 if no valid countdown is found
+                countdown = 60; 
                 updateTimerDisplay(); // Update the display to show 60 seconds
-                startTimer(); // Start the timer
+                startTimer(); 
             }
     
             function updateTimerDisplay() {
@@ -116,7 +117,7 @@
             }
     
             function startTimer() {
-                resendButton.disabled = true; // Disable the resend button at the start
+                resendButton.disabled = true; 
                 const timer = setInterval(function () {
                     countdown--;
                     updateTimerDisplay();
@@ -127,7 +128,7 @@
                         countdown = 0;
                         updateTimerDisplay();
                         localStorage.removeItem('otpCountdown'); 
-                        resendButton.disabled = false; // Re-enable the resend button when countdown reaches 0
+                        resendButton.disabled = false; 
                     }
                 }, 1000);
             }
@@ -144,12 +145,20 @@
                 .then(response => response.json())
                 .then(data => {
                     if (data.success) {
-                        alert(data.message);
+                        //alert(data.message);
+                        swal.fire({
+                            icon:success,
+                            text:data.message
+                        });
                         countdown = 60; 
                         updateTimerDisplay(); 
-                        startTimer(); // Restart the timer after resending the OTP
+                        startTimer(); 
                     } else {
-                        alert(data.message); 
+                        //alert(data.message); 
+                        swal.fire({
+                            icon:warning,
+                            text:data.message
+                        })
                     }
                 })
                 .catch(error => {

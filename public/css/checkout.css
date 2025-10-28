@@ -232,3 +232,36 @@ h4 {
     margin: 0;
   }
 }
+
+
+    .modal {
+        z-index: 1060; 
+        margin-top: 65px;
+    }
+
+    .modal-dialog {
+        max-width: 500px; 
+        margin-top: 80px; 
+    }
+    .modal-body {
+        padding: 15px;
+        max-height: 600px;
+        overflow-y: auto; 
+    }
+
+    
+    @media (max-width: 576px) {
+        .modal-dialog {
+            margin-top: 50px; 
+            max-width: 90%; 
+        }
+
+        .modal-body {
+            max-height: 300px; 
+            padding: 10px;
+        }
+
+        .modal-body .form-group {
+            margin-bottom: 0.5rem;
+        }
+    }

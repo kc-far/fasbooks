@@ -35,7 +35,7 @@ const couponSchema = new mongoose.Schema({
         default: true
     },
     userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: false },
-    isFirstOrder: { type: Boolean, default: true },
+    isFirstOrder: { type: Boolean, default: false },
     
     
 
