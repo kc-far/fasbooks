@@ -9,6 +9,7 @@ const passport = require('passport');
 const flash = require('connect-flash');
 require('./config/passportConfig');
 
+
 // Connect to the database
 connectDb();
 
@@ -62,6 +63,7 @@ app.set("view engine", "ejs");
 app.use('/', userRoute);
 app.use('/admin', adminRoute);
 
+
 // Catch-all route for undefined user routes
 app.use('/', (req, res, next) => {
     if (!req.route) {
@@ -94,6 +96,12 @@ app.use('/', (req, res, next) => {
   });
   
   app.use(flash())
+  app.use((req, res, next) => {
+    res.locals.message = req.flash('message');
+    res.locals.error = req.flash('error');
+    res.locals.success = req.flash('success');
+    next();
+  });
 // Start the server
 app.listen(port, () => console.log(`App listening on port ${port}!`));
 

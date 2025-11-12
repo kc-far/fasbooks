@@ -1,11 +1,13 @@
 const passport = require('passport');
 const GoogleStrategy = require('passport-google-oauth20').Strategy;
-const User = require("../models/userModel"); // Adjust the path as necessary
+const User = require("../models/userModel"); 
 
+// passport.serializeUser((user, done) => {
+//     done(null, user.id);
+// });
 passport.serializeUser((user, done) => {
-    done(null, user.id);
+    done(null, user._id.toString());   // <-- store DB id
 });
-
 passport.deserializeUser(async (id, done) => {
     try {
         const user = await User.findById(id);
