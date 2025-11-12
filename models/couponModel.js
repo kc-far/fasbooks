@@ -28,7 +28,7 @@ const couponSchema = new mongoose.Schema({
     },
     usageLimit: {
         type: Number,
-        default: 1
+        default: 5
     },
     isActive: {
         type: Boolean,

@@ -4,6 +4,11 @@ const router = express.Router();
 const userController = require('../controller/userController');
 const cartController = require('../controller/cartController')
 const orderController = require('../controller/orderController');
+const productController=require('../controller/productController');
+const couponController=require('../controller/couponController');
+const addressController=require('../controller/addressController');
+const profileController=require('../controller/profileController')
+const otherController=require('../controller/otherController')
 const userAuth = require("../middleware/user/userAuth");
 const nocache = (req, res, next) => {
     res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, private');
@@ -14,8 +19,8 @@ const nocache = (req, res, next) => {
 
 // Public Pages
 router.get('/',userAuth.isLogin,userController.getLand);
-router.get('/about', userController.aboutPage);
-router.get('/contact', userController.contactPage);
+router.get('/about', otherController.aboutPage);
+router.get('/contact', otherController.contactPage);
 
 // Authentication Routes
 router.get('/login', userAuth.isLogin, userController.renderLoginPage);
@@ -41,21 +46,21 @@ router.post('/reset-password', userController.resetPassword);
 router.get('/home', userAuth.checkSession, userController.getHome);
 
 // Profile 
-router.get('/profilePersonal', userAuth.checkSession, userController.getProfile);
-router.post('/editProfile',userAuth.checkSession,  userController.editProfile);
-router.get('/profileOrders', userAuth.checkSession, userController.getOrders)
-router.get('/orderDetails/:orderId',userAuth.checkSession,  userController.orderDetails)
-router.get('/referral-link', userAuth.checkSession,userController.getReferralLink);
+router.get('/profilePersonal', userAuth.checkSession, profileController.getProfile);
+router.post('/editProfile',userAuth.checkSession,  profileController.editProfile);
+router.get('/profileOrders', userAuth.checkSession, profileController.getOrders)
+router.get('/orderDetails/:orderId',userAuth.checkSession,profileController.orderDetails)
+router.get('/referral-link', userAuth.checkSession,profileController.getReferralLink);
 
 // Address
-router.get('/profileAddress',userAuth.checkSession,userController.getAddress)
-router.post('/addAddress', userAuth.checkSession, userController.addAddress);
-router.post('/editAddress/:addressId', userAuth.checkSession, userController.editAddress);
-router.post('/deleteAddress/:addressId', userAuth.checkSession, userController.deleteAddress);
+router.get('/profileAddress',userAuth.checkSession,addressController.getAddress)
+router.post('/addAddress', userAuth.checkSession, addressController.addAddress);
+router.post('/editAddress/:addressId', userAuth.checkSession, addressController.editAddress);
+router.post('/deleteAddress/:addressId', userAuth.checkSession,addressController.deleteAddress);
 
-// Products
-router.get('/products', userAuth.checkSession, userController.getProducts);
-router.get('/product-detail/:id', userController.getProductDetail);
+//Products
+router.get('/products', userAuth.checkSession, productController.getProducts);
+router.get('/product-detail/:id',userAuth.checkSession, productController.getProductDetail);
 
 //cart
 router.get('/cart', userAuth.checkSession, cartController.getCart);
@@ -74,13 +79,13 @@ router.post('/checkout', userAuth.checkSession, orderController.processCheckout)
 router.get('/checkout', userAuth.checkSession, orderController.getCartItems);
 router.post('/addNewAddress', userAuth.checkSession, orderController.addNewAddress);
 
-router.post('/validateCoupon',userAuth.checkSession,orderController.validateCoupon)
-router.get('/getAvailableCoupons',userAuth.checkSession,orderController.getAvailableCoupons)
+router.post('/validateCoupon',userAuth.checkSession,couponController.validateCoupon)
+router.get('/getAvailableCoupons',userAuth.checkSession,couponController.getAvailableCoupons)
  // Payment
  //router.post('/checkoutCOD', userAuth.checkSession, orderController.placeCODOrder);
- router.post('/verify-razorpay-payment',userAuth.checkSession, orderController.verifyPayment);
- router.get('/failed',userAuth.checkSession,orderController.paymentFailed)
- router.get('/order-details/:orderId',userAuth.checkSession,orderController.retryPayment);
+router.post('/verify-razorpay-payment',userAuth.checkSession, orderController.verifyPayment);
+router.get('/failed',userAuth.checkSession,orderController.paymentFailed)
+router.get('/order-details/:orderId',userAuth.checkSession,orderController.retryPayment);
 
 //Order
 router.get('/orderSuccess', userAuth.checkSession, orderController.orderSuccess);
@@ -89,7 +94,7 @@ router.post('/ordersCancel/:orderId', userAuth.checkSession, orderController.can
 router.post('/orders/:orderId/cancel/:productId',userAuth.checkSession,orderController.cancelItem)
 router.post('/ordersReturn/:orderId/:productId', userAuth.checkSession, orderController.returnItem);
 
-router.get('/orders/:orderId/invoice',userAuth.checkSession,orderController.getInvoice)
+router.get('/orders/:orderId/invoice',userAuth.checkSession,otherController.getInvoice)
 
 //wallet
 router.get('/wallet',userAuth.checkSession, userController.getWallet)

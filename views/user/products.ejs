@@ -154,9 +154,7 @@
 							<!-- Search Bar -->
 							<div class="filter-group">
 								<label for="search">Search:</label>
-								<input type="text" id="search" class="form-control" placeholder="Search products...">
-						
-			
+								<input type="text" id="search" class="form-control" placeholder="Search products...">			
 							</div>
 							<div class="filter-group">
 								<label for="sort">Sort By:</label>
@@ -297,8 +295,8 @@ document.addEventListener('DOMContentLoaded', function() {
 				} else {
 					// Show SweetAlert error message
 					Swal.fire({
-						icon: 'error',
-						title: 'Oops...',
+						icon: 'warning',
+						title: 'Heyy...',
 						text: data.message || 'Could not add to wishlist.',
 					});
 					button.disabled = false;

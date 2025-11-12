@@ -183,7 +183,7 @@ const userSignup = async (req, res) => {
                  }
                  
             }else{
-                console.log(9)
+                
                 wallet.balance += 150; 
                 wallet.transactions.push({
                     amount: 150,
@@ -191,7 +191,7 @@ const userSignup = async (req, res) => {
                     message: 'Referral bonus credited for referring a new user via code.',
                 });
                  await wallet.save();
-console.log(10)
+
                  req.session.tempUserWallet={
                     balance:75,
                     transactions:[{
@@ -297,9 +297,7 @@ const verifyOtp = async (req, res) => {
 const resendOtp = async (req, res) => {
     const { email } = req.body; 
 
-    try {
-        
-     
+    try {   
         const otp = Math.floor(100000 + Math.random() * 900000).toString(); 
         req.session.otp = otp; 
         req.session.otpExpires = new Date(Date.now() + 60 * 1000); 
@@ -330,7 +328,7 @@ const userLogin = async (req, res) => {
             return res.render('user/login', { error: 'Invalid email or password.', message: "" });
         }
 
-        // Check if the user is blocked
+        //Check if the user is blocked
         if (user.isBlocked) {
             return res.render('user/login', { error: 'Your account is blocked.', message: null });
         }
@@ -364,13 +362,14 @@ const googleLogin = (req, res) => {
             return res.render('user/login', { error: 'Your account is blocked', message: null });
         }
         // Store user in session after successful authentication to Ensure the ID is properly stored in the session
-        req.session.user = { id: req.user._id };
+        req.session.user = { id: req.user._id ,email: req.user.email};
+        console.log(req.session.user)
+         console.log(req.user._id.toString())
         return res.redirect('/home');
     }
 
     return res.redirect('/login?error=Authentication failed');
 };
-
 
 
 //home page
@@ -454,166 +453,7 @@ const getLand = async (req, res) => {
     }
 }
 
-//product page
-const getProducts = async (req, res) => {
-    try {
-        const { sort, category, search, page = 1 } = req.query;
-        const filter = { isActive: true }; 
-        const limit = 6;
-        const skip = (page - 1) * limit;
-        const userId = req.session.user.id; 
 
-        const cart = await Cart.findOne({ userId: userId }, { items: 1 });
-        const itemCount = cart ? cart.items.length : 0;       
-            if (category && category !== 'all') {
-                filter.categoryId = category; // Ensure category field matches schema
-            }
-
-        if (search) {
-            filter.title = new RegExp(search, 'i'); // Case-insensitive search on title
-        }
-
-        let sortCriteria = {};
-        switch (sort) {
-            case 'price-low-high':
-                sortCriteria.price = 1;
-                break;
-            case 'price-high-low':
-                sortCriteria.price = -1;
-                break;
-            case 'average-ratings':
-                sortCriteria.averageRating = -1;
-                break;
-            case 'new-arrivals':
-                sortCriteria.createdAt = -1;
-                break;
-            case 'a-z':
-                sortCriteria.title = 1;
-                break;
-            case 'z-a':
-                sortCriteria.title = -1;
-                break;
-            case 'in-stock':
-                filter.stock = { $gt: 0 };
-                break;
-        }
-
-        const offers = await Offer.find({ isActive: true });
-
-        const [products, totalProducts] = await Promise.all([
-            Book.find(filter).sort(sortCriteria).skip(skip).limit(limit).populate('categoryId', 'name'),
-            Book.countDocuments(filter)
-        ]);
-
-        const totalPages = Math.ceil(totalProducts / limit);
-
-        const currentDate = new Date();
-        const productsWithOffers = products.map(product => {
-            let maxDiscountedPrice = product.price; // Start with the original price
-            let hasDiscount = false;
-
-            offers.forEach(offer => {
-                const isOfferActive = !offer.validUntil || offer.validUntil > currentDate; // Check if the offer is still valid
-                const isProductEligible = offer.applicableProducts.some(id => id.equals(product._id)); // Check if product ID is in applicableProducts
-                const isCategoryEligible = offer.applicableCategories.some(id => id.equals(product.categoryId?._id)); // Check if category ID is in applicableCategories
-
-                if (isOfferActive && (isProductEligible || isCategoryEligible)) {
-                    const calculatedDiscountedPrice = product.price - (product.price * (offer.discount / 100));
-
-                    if (calculatedDiscountedPrice < maxDiscountedPrice) {
-                        maxDiscountedPrice = calculatedDiscountedPrice;
-                        hasDiscount = true;
-                    }
-                }
-            });
-
-            return {
-                ...product.toObject(),
-                discountedPrice: maxDiscountedPrice, // Final discounted price (if applicable)
-                hasDiscount 
-            };
-        });
-
-        
-        if (req.xhr) {
-            return res.json({
-                products: productsWithOffers,
-                totalPages,
-                currentPage: Number(page)
-            });
-        }
-        const wishlistStatus = await Wishlist.find({ userId });
-        res.render('user/products', {
-            products: productsWithOffers, // Pass updated products with discount info
-            categories: await Category.find({ isActive: true }),
-            currentPage: page,
-            totalPages,
-            sort,
-            category,
-            search,
-            itemCount,
-            wishlistStatus: wishlistStatus.map(status => status.productId.toString())
-        });
-    } catch (error) {
-        console.error('Error fetching products:', error);
-        res.status(500).send("Error fetching products");
-    }
-};
-
-
-
-
-//product details
-const getProductDetail = async (req, res) => {
-    
-    try {
-        const userId = req.session.user?.id;
-        const productId = req.params.id; 
-        
-        if (!mongoose.isValidObjectId(productId)) {
-            return res.status(400).render('404', { message: "Bad request: Invalid product ID" });
-        }
-
-        const product = await Book.findOne({ _id: productId, isActive: true }).populate('categoryId');
-
-        if (!product) {
-            return res.status(404).render('404', { message: 'Product not found' });
-        }
-
-        const offers = await Offer.find({ isActive: true });
-
-        let discountedPrice = null;
-
-        offers.forEach(offer => {
-            const isProductEligible = offer.applicableProducts.includes(product._id);
-            const isCategoryEligible = offer.applicableCategories.includes(product.categoryId?.name);
-
-            if (isProductEligible || isCategoryEligible) {
-                discountedPrice = product.price - (product.price * (offer.discount / 100));
-            }
-        });
-
-        const productWithOffer = {
-            ...product.toObject(),
-            discountedPrice: discountedPrice || product.price,
-            hasDiscount: !!discountedPrice
-        };
-        const products = await Book.find({ categoryId:product.categoryId._id,
-                       _id:{$ne:productId}, isActive: true });
-       
-        const wishlistStatus = await Wishlist.find({ userId });
-        res.render('user/product-detail', { 
-            product: productWithOffer, 
-            products ,
-            wishlistStatus: wishlistStatus.map(status => status.productId.toString())
-        });
-
-    } catch (error) {
-        console.error(error);
-        res.status(500).render('404', { message: 'Server error' });
-    }
-    
-};
 
 const renderLoginPage = (req, res) => {
     res.render('user/login', { error: "", message: "" });
@@ -634,335 +474,6 @@ const logout = (req, res) => {
     }
 };
 
-// const getProfile = async (req, res) => {
-//     try {
-//         const userId = req.session.user.id;
-
-//         if (!userId) {
-//             return res.status(401).send('User not authenticated');
-//         }
-
-//         const user = await User.findById(userId);
-
-//         const addresses = await Address.find({ userId: userId });
-//         const currentUrl = req.url;
-//         res.render('user/profilePersonal', {
-//             orders: '',
-//             currentUrl ,
-//             name: user.name,
-//             email: user.email,
-//             phone: user.phone || '',
-//             gender: user.gender || '', // Assuming gender was added
-//             addresses: addresses,
-//             referralCode: user.referralCode || '',
-//             });
-//     } catch (error) {
-//         res.status(500).send('Error fetching user data')
-//     }
-// };
-//profile page
-const getProfile = async (req, res) => {
-  try {
-    // Get user session details
-    const { email } = req.session.user;
-    const user = await User.findOne({ email });
-
-    if (!user) {
-      return res.status(404).json({ message: "User not found" });
-    }
-
-    // Fetch the user's address document
-    const addressDocument = await Address.findOne({ userId: user._id });
-
-    const addresses = addressDocument ? addressDocument.addresses : [];
-
-    const firstAddress = addresses.length > 0 ? addresses[0] : [];
-
-    //order details
-    const orders = await Order.find({ userId: user._id })
-      .populate("items.productId", "title images")
-      .sort({ createdAt: -1 });
-     
-    //referralLink
-    const referralLink = await User.generateReferralLink(user._id);
-
-
-    // Pass user and addresses to the EJS template
-    res.render("user/profilePersonal", {
-      user,
-      addresses,
-      orders,
-      firstAddress,
-      referralLink
-    });
-    
-  } catch (error) {
-    console.error("Error loading profile:", error);
-    //res.render("user/home", { message: "Server error" });
-    res.status(500).send("Error loading profile");
-  }
-};
-
-const editProfile = async (req, res) => {
-  try {
-    const { name, email, currentPassword,newPassword } = req.body;
-    const userId = req.session.user?.id;
-    const user=await User.findById(userId)
-    if (!user) {
-      return res 
-        .status(401)
-        .json( { success: false, error: 'User not found' });
-    }
-    const isMatch=await bcrypt.compare(currentPassword , user.password)
-    if(currentPassword && !isMatch){
-        return res.status(400).json({ success: false, error: 'Invalid current password' })
-    }  
-    if(email !==user.email){
-        const userExist=await User.findOne({email})
-        if(userExist){
-            return res.status(400).json({ success: false, error: 'Email already in use' })
-        }
-    }
-    user.name=name;
-    user.email=email;
-    if(newPassword){
-        user.password=newPassword
-    }
-    await user.save()
-
-    req.session.user = {
-    id: user._id,
-    name: user.name,
-    email: user.email
-    };
-    return res.json({ success: true, message: "Profile updated successfully" });  
-  } catch (error) {
-    console.error("Error updating profile:", error);
-     res.status(500).json({success:false,error:'Internal Server Error'});
-  }
-};
-
-
-const getAddress=async(req,res)=>{
-  try {
-    // Get user session details
-    const { email } = req.session.user;
-    const user = await User.findOne({ email });
-
-    if (!user) {
-      return res.status(404).json({ message: "User not found" });
-    }
-
-    // Fetch the user's address document
-    const addressDocument = await Address.findOne({ userId: user._id });
-
-    const addresses = addressDocument ? addressDocument.addresses : [];
-
-    const firstAddress = addresses.length > 0 ? addresses[0] : [];
-    res.render("user/profileAddress", {
-      user,
-      addresses,
-      firstAddress,
-      activeTab: 'address'
-    });
-    
-  } catch (error) {
-    console.error("Error loading profile:", error);
-    //res.render("user/home", { message: "Server error" });
-    res.status(500).send("Error loading profile");
-  }
-};
-
-
-//add address
-const addAddress = async (req, res) => {
-  try {
-    console.log('add address working')
-    const {
-      name,
-      phone,
-      pincode,
-      locality,
-      city,
-      state,
-      address,
-      landmark,
-      alternatePhone,
-    } = req.body;
-    const userId = req.session.user?.id;
-
-    if (!userId) {
-      return res.render("user/profileAddress", { message: "Unauthorized" });
-    }
-
-    // Find the user's address document or create a new one if it doesn't exist
-    let userAddress = await Address.findOne({ userId });
-
-    if (!userAddress) {
-      userAddress = new Address({
-        userId,
-        addresses: [],
-      });
-    }
-
-    // Append the new address
-    userAddress.addresses.push({
-      name,
-      phone,
-      pincode,
-      locality,
-      city,
-      state,
-      address,
-      landmark,
-      alternatePhone,
-    });
-
-    // Save the document
-    await userAddress.save();
-
-    res.redirect("/profileAddress?section=addressBook");
-  } catch (error) {
-    console.error("Error adding address:", error);
-    res.redirect("/profileAddress?section=addressBook&error=true");
-  }
-};
-
-//edit address
-const editAddress = async (req, res) => {
-  try {
-    const { addressId } = req.params;
-    const userId = req.session.user?.id;
-
-    if (!userId) {
-      return res.render("user/profileAddress", { message: "Unauthorized" });
-    }
-
-    const {
-      name,
-      address,
-      locality,
-      city,
-      state,
-      pincode,
-      phone,
-      alternatePhone,
-      landmark,
-    } = req.body;
-
-    // Use MongoDB's `$set` operator to update the specific address in the array
-    const updatedUser = await Address.findOneAndUpdate(
-      { userId, "addresses._id": addressId },
-      {
-        $set: {
-          "addresses.$.name": name,
-          "addresses.$.address": address,
-          "addresses.$.locality": locality,
-          "addresses.$.city": city,
-          "addresses.$.state": state,
-          "addresses.$.pincode": pincode,
-          "addresses.$.phone": phone,
-          "addresses.$.alternatePhone": alternatePhone,
-          "addresses.$.landmark": landmark,
-        },
-      },
-      { new: true }
-    );
-
-    if (!updatedUser) {
-      return res.status(404).send("Address not found or user unauthorized");
-    }
-
-    res.redirect("/profileAddress?section=addressBook");
-  } catch (error) {
-    console.error("Error updating address:", error);
-    res.redirect("/profileAddress?section=addressBook&error=true");
-  }
-};
-
-//delete address
-const deleteAddress = async (req, res) => {
-  try {
-    const { addressId } = req.params;
-    const userId = req.session.user?.id;
-
-    // Check if the user is authenticated
-    if (!userId) {
-      return res.render("user/profileAddress", { message: "Unauthorized" });
-    }
-
-    //remove the address from the addresses array
-    const updatedUser = await Address.findOneAndUpdate(
-      { userId },
-      { $pull: { addresses: { _id: addressId } } },
-      { new: true }
-    );
-
-    if (!updatedUser) {
-      return res.status(404).send("Address not found or user unauthorized");
-    }
-
-    res.redirect("/profileAddress?section=addressBook");
-  } catch (error) {
-    console.error("Error deleting address:", error);
-    res.redirect("/profileAddress?section=addressBook&error=true");
-  }
-};
-
-const getOrders = async (req, res) => {
-    try {
-        const userId = req.session.user.id;
-         const { email } = req.session.user;
-         const user = await User.findOne({ email });
-        const page = parseInt(req.query.page) || 1; 
-        const limit = 3; 
-        const search = req.query.search || '';
-
-        const query = search ? { $or: [
-            { OrderId: { $regex: search, $options: 'i' } },
-            { status: { $regex: search, $options: 'i' } }
-        ] }: {};
-        // Query to get total number of orders
-        const totalOrders = await Order.countDocuments(query);
-        const totalPages = Math.ceil(totalOrders / limit);
-         
-        // Fetch orders for the current page with pagination and populate product details
-        const orders = await Order.find({ userId })
-            .sort({ createdAt: -1 })
-            .skip((page - 1) * limit)
-            .limit(limit)
-            .populate('items.productId');
-
-        res.render('user/profileOrders', {
-            orders,
-            user,
-            currentPage: page,
-            totalPages,
-            search
-        });
-    } catch (error) {
-        console.error(error);
-        res.status(500).send('Server error');
-    }
-};
-const orderDetails=async(req,res)=>{
-    try{
-        const { email } = req.session.user;
-        const user = await User.findOne({ email });
-        const orderId = req.params.orderId  
-        const order = await Order.findById(orderId).populate('items.productId',"title images")
-            
-        if(!order){
-            return res.status(404).send('order not found')
-        } 
-        res.render('user/orderDetails',{
-           user,
-           order,
-        })
-    }catch(err){
-     console.error(err);
-    }
-}
 // Send OTP for Forgot Password
 const forgotPassword = async (req, res) => {
     const { email } = req.body;
@@ -1039,7 +550,7 @@ const getWishlistItems = async (req, res) => {
         const page = parseInt(req.query.page) || 1;
         const skip = (page - 1) * limit;
 
-        const wishlistItems = await Wishlist.find({ userId })
+        const listItems = await Wishlist.find({ userId })
             .populate({
                 path: 'productId',
                 select: '_id title images price'
@@ -1047,7 +558,7 @@ const getWishlistItems = async (req, res) => {
             .sort({ $natural: -1 }) // Sort by most recent additions
             .skip(skip)
             .limit(limit);
-
+        const wishlistItems=listItems.filter(item => item.productId !== null);
         const totalItems = await Wishlist.countDocuments({ userId });
 
         res.render('user/wishlist', {
@@ -1112,8 +623,7 @@ const removeWishlist = async (req, res) => {
 
 const getWallet = async (req, res) => {
     try {
-        
-        
+            
         const userId = req.session.user.id;
         const page = parseInt(req.query.page) || 1;
         const limit = 4;
@@ -1170,34 +680,12 @@ const getWalletBalence=async(req,res)=>{
         res.status(500).send('Internal server error');
     }
 }
-const contactPage = (req, res) => {
-    res.render('user/contact')
-}
 
-const aboutPage = (req, res) => {
-    res.render('user/about')
-}
 
-const getReferralLink=async (req,res)=>{
-    try {
-        const user= await User.findById(req.user.id)
-        if (!user) {
-            return res.status(404).json({ success: false, message: 'User not found.' });
-        }
-        const baseUrl = `${req.protocol}://${req.get('host')}`;
-        const referralLink = `${baseUrl}/register?ref=${user.referralCode}`;
-        res.json({ success: true, referralLink });
-    } catch (error) {
-        console.error('Error generating referral link:', error);
-        res.status(500).json({ success: false, message: 'Error generating referral link.' });
-    }
-}
 
 module.exports = {
     userSignup,
     userLogin,
-    getProducts,
-    getProductDetail,
     getHome,
     getLand,
     googleLogin,
@@ -1207,14 +695,6 @@ module.exports = {
     renderSignupPage,
     renderLoginPage,
     logout,
-    getProfile,
-    getOrders,
-    orderDetails,
-    editProfile,
-    getAddress,
-    addAddress,
-    editAddress,
-    deleteAddress,
     forgotPassword,
     resetPassword,
     verifyForgotPasswordOtp,
@@ -1225,8 +705,6 @@ module.exports = {
     addBooksWishlist,
     removeWishlist,
     getWallet,
-    getWalletBalence,
-    contactPage,
-    aboutPage,
-    getReferralLink,
+    getWalletBalence, 
+   
 }

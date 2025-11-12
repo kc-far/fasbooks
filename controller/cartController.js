@@ -88,13 +88,14 @@ const getCart = async (req, res) => {
     const userId = req.session.user?.id;
 
     try {
-        const cart = await Cart.findOne({ userId }).populate('items.productId');
+        const cart = await Cart.findOne({userId }).populate('items.productId');
 
         if (!cart) {
             return res.render('user/cart', { items: [] ,errorMessage:null});
         }
 
-        const items = cart.items.map(item => {
+        const items = cart.items.filter(item => item.productId !== null)
+        .map(item => {
             return {
                 productId: item.productId._id,
                 name: item.productId.title,
@@ -174,7 +175,7 @@ const updateCart = async (req, res) => {
         .json({ success: false, message: "Cart not found" });
 
     const itemIndex = cart.items.findIndex(
-      (item) => item.productId._id.toString() === productId
+      (item) => item.productId &&item.productId._id.toString() === productId
     );
     if (itemIndex === -1) {
       return res
@@ -222,9 +223,15 @@ const updateCart = async (req, res) => {
 
     await cart.save();
 
-    const cartTotal = cart.items.reduce((total, item) => {
-      return total + item.quantity * item.productId.price;
-    }, 0);
+    // const cartTotal = cart.items.reduce((total, item) => {
+    //   return total + item.quantity * item.productId.price;
+    // }, 0);
+    const cartTotal = cart.items.reduce((sum, i) => {
+  if (i.productId && i.productId.price) {
+    return sum + i.quantity * i.productId.price;
+  }
+  return sum;  // Skip broken items
+}, 0);
 
     res.json({
       success: true,

@@ -1,6 +1,12 @@
 <%- include("partials/header.ejs") %>
 <link rel="stylesheet" href="/css/profileInfo.css"> 
-
+<style>
+  #editProfileModal  {
+    margin-top: 95px;           /* navbar height + a little breathing room */
+    z-index: 1080;              /* Bootstrap default = 1050; raise it */
+    
+}
+</style>
     
 
   
@@ -56,11 +62,13 @@
                                 <i class="fas fa-copy"></i> Copy
                             </button>
                         </p>
-                        <button id="edit-btn" class="btn btn-primary btn-sm mt-3"  onclick="toggleEditForm()">Edit Profile</button>
-                    </div>
+                        <!-- <button id="edit-btn" class="btn btn-primary btn-sm mt-3"  onclick="toggleEditForm()">Edit Profile</button>-->
+                         <button id="editProfileBtn"class="btn btn-primary btn-sm mt-3" data-toggle="modal" data-target="#editProfileModal">
+                           Edit Profile</button>
+                    </div> 
 
                     <!-- Hidden Form for Editing Profile -->
-                    <form id="editProfileForm" action="/editProfile" method="POST" style="display: none;" class="mt-4">
+                    <!-- <form id="editProfileForm" action="/editProfile" method="POST" style="display: none;" class="mt-4">
                         <div class="form-group">
                             <label for="name">Name</label>
                             <input type="text" id="name" name="name" class="form-control" value="<%= user.name %>" >
@@ -91,10 +99,77 @@
                         <br>
                         <button type="submit" class="btn btn-success btn-sm">Save Changes</button>
                         <button type="button" class="btn btn-secondary btn-sm ml-2" onclick="toggleEditForm()">Cancel</button>
-                    </form>
+                    </form>-->
                 </div>
+            </div> 
+
+            <!-- ==== Edit Profile Modal ==== -->
+<div class="modal fade" id="editProfileModal" tabindex="-1" role="dialog"
+     aria-labelledby="editProfileModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title text-dark" id="editProfileModalLabel">Edit Profile</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
             </div>
+
+            <form id="editProfileForm" action="/editProfile" method="POST">
+                <div class="modal-body">
+
+                    <div class="form-group">
+                        <label for="name">Name</label>
+                        <input type="text" id="name" name="name" class="form-control"
+                               value="<%= user.name %>" required>
+                        <small id="nameValidate" class="text-danger"></small>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="email">Email</label>
+                        <input type="email" id="email" name="email" class="form-control"
+                               value="<%= user.email %>" required>
+                        <small id="emailCheck" class="text-danger"></small>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="currentPassword">Current Password</label>
+                        <input type="password" id="currentPassword" name="currentPassword"
+                               class="form-control" placeholder="Enter current password" >
+                        <small id="currentPassCheck" class="text-danger"></small>
+                        <a href="/forgot-password" class="d-block mt-1">Forgot password?</a>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="newPassword">New Password</label>
+                        <input type="password" id="newPassword" name="newPassword"
+                               class="form-control" placeholder="Leave blank to keep the same">
+                        <small id="newPassValidate" class="text-danger"></small>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="confirmPassword">Confirm New Password</label>
+                        <input type="password" id="confirmPassword" name="confirmPassword"
+                               class="form-control" placeholder="Leave blank to keep the same">
+                        <small id="confirmPass" class="text-success"></small>
+                        <small id="changeSuccess" class="text-primary"></small>
+                    </div>
+
+                </div>
+
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">
+                        Cancel
+                    </button>
+                    <button type="submit" class="btn btn-success">
+                        Save Changes
+                    </button>
+                </div>
+            </form>
         </div>
+    </div>
+</div>
+        </div> 
         <div class='card' id="area-link">
             <h4 class="text-dark text-center mt-3">Your Referral Link</h4>
             <p class="text-success ml-2 mt-2 ">Share this link with friends to earn rewards!</p>

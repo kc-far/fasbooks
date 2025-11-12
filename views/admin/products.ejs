@@ -86,11 +86,7 @@
     max-width: 100%;
     height: auto;
   }
-  .search-form input:disabled {
-    background-color: #f5f5f5;
-    cursor: not-allowed;
-    color: #ffffff;
-  }
+  
   
 </style>
 </head>
@@ -115,7 +111,7 @@
                     <button>clear</button>
                 </form> -->
                 <form class="nav-link mt-2 mt-md-0 d-none d-lg-flex search search-form" method="GET" action="/admin/products">
-                    <input type="text" class="form-control" name="search" id="productSearch" placeholder="Search by title, author, or category" disabled>
+                    <input type="text" class="form-control" name="search" id="productSearch" placeholder="Search by title, author, or category" >
                     <button type="submit" class="btn btn-primary ">Search</button>
                     <a href="/admin/products" class="btn btn-secondary ms-2 btn-clear p-2"  id="clear-search">Clear</a>
                 </form>

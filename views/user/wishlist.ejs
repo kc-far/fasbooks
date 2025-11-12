@@ -182,7 +182,7 @@
 <div class="container">
     <div class="row">
         <div class="wishlist-table-container">
-            <% if (wishlistItems.length > 0) { %>
+            <!-- <% if (wishlistItems.length > 0) { %>
                 <table class="wishlist-table">
                     <thead>
                         <tr>
@@ -223,7 +223,56 @@
                 <div class="empty-wishlist-message">
                     <p>Your wishlist is empty. Start adding some items you love!</p>
                 </div>
-            <% } %>
+            <% } %> -->
+            <% if (wishlistItems && wishlistItems.length > 0) { %>
+    <table class="wishlist-table">
+        <thead>
+            <tr>
+                <th>Image</th>
+                <th>Name</th>
+                <th>Price</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            <% wishlistItems.forEach((item) => { %>
+                <% if (item.productId) { %>
+                    <% const product = item.productId; %>
+                    <tr class="wishlist-item" data-product-id="<%= product._id %>">
+                        <td>
+                            <a href="/product-detail/<%= product._id %>">
+                                <img src="<%= product.images[0] %>" alt="<%= product.title %>">
+                            </a>
+                        </td>
+                        <td class="product-name">
+                            <a href="/product-detail/<%= product._id %>"><%= product.title %></a>
+                        </td>
+                        <td class="product-price">
+                            ₹<%= product.price.toFixed(2) %>
+                        </td>
+                        <td class="actions">
+                            <button type="button" class="btn btn-primary move-to-cart" data-product-id="<%= product._id %>">
+                                Move to Cart
+                            </button>
+                            <button type="button" class="btn btn-danger remove-from-wishlist" data-product-id="<%= product._id %>">
+                                Remove
+                            </button>
+                        </td>
+                    </tr>
+                <% } else { %>
+                    <!-- Optional: Show a placeholder for broken items (or skip silently) -->
+                    <tr class="text-muted">
+                        <td colspan="4">Product no longer available</td>
+                    </tr>
+                <% } %>
+            <% }); %>
+        </tbody>
+    </table>
+<% } else { %>
+    <div class="empty-wishlist-message">
+        <p>Your wishlist is empty. Start adding some items you love!</p>
+    </div>
+<% } %>
         </div>
     </div>
 </div>

@@ -9,6 +9,7 @@ const passport = require('passport');
 const flash = require('connect-flash');
 require('./config/passportConfig');
 
+
 // Connect to the database
 connectDb();
 
@@ -95,6 +96,12 @@ app.use('/', (req, res, next) => {
   });
   
   app.use(flash())
+  app.use((req, res, next) => {
+    res.locals.message = req.flash('message');
+    res.locals.error = req.flash('error');
+    res.locals.success = req.flash('success');
+    next();
+  });
 // Start the server
 app.listen(port, () => console.log(`App listening on port ${port}!`));
 
