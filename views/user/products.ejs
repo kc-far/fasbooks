@@ -154,14 +154,15 @@
 							<!-- Search Bar -->
 							<div class="filter-group">
 								<label for="search">Search:</label>
-								<input type="text" id="search" class="form-control" placeholder="Search products...">			
+								<input type="text" id="search" class="form-control" placeholder="Search products...">		
 							</div>
-							<div class="filter-group">
+							<!-- Search Bar with Search Button + Clear (X) Button -->
+
+							<div class="filter-group mb-4">
 								<label for="sort">Sort By:</label>
 								<select id="sort" class="form-control">
 									<option value="price-low-high">Price: Low to High</option>
 									<option value="price-high-low">Price: High to Low</option>
-									<option value="average-ratings">Average Ratings</option>
 									<option value="new-arrivals">New Arrivals</option>
 									<option value="a-z">A-Z</option>
 									<option value="z-a">Z-A</option>
@@ -423,6 +424,8 @@ document.addEventListener('DOMContentLoaded', function() {
 }
 
 </style>
+				
+
 				<div class="pagination-container d-flex justify-content-center my-4">
 					<ul class="pagination">
 						<% for (let i = 1; i <= totalPages; i++) { %>
@@ -513,6 +516,8 @@ document.addEventListener('DOMContentLoaded', function() {
 		});
 	}
 	
+	
+
 	function attachWishlistButtonHandlers() {
 		let isSubmit = false;
 	

@@ -59,7 +59,13 @@
                                             </div>
                                             
                                             <div class="card-body">
-                                                
+                                                <p><strong>Order Date:</strong> 
+                                                    <span><%= new Date(order.createdAt).toLocaleDateString('en-IN', {
+                                                                day: '2-digit',
+                                                                month: 'short',
+                                                                year: 'numeric'
+                                                    }) %></span>
+                                                </p>
                                                 <p><strong>Payment Status:</strong> 
                                                 <span style="color: rgb(224, 85, 10); font-weight: bold;"><%= order.paymentStatus %></span>
                                                 </p>
@@ -82,15 +88,22 @@
                                                             </tr>
                                                         </thead>
                                                         <tbody>
+                                                           
                                                             <% order.items.forEach(product => { %>
-                                                                <tr>
-                                                                    <td onclick="window.location.href='/product-detail/<%= product.productId._id %>'">
-                                                                        <img src="<%= product.productId.images[0] %>" 
-                                                                             alt="<%= product.productId.title%>" 
-                                                                             class="img-thumbnail" 
-                                                                             style="width: 50px; height: 50px; object-fit: cover;">
+                                                                <tr>      
+                                                                    <td <%= product.productId ? `onclick="window.location.href='/product-detail/${product.productId._id}'" style="cursor:pointer;"` : 'style="opacity:0.6;"' %>>
+                                                                        <img src="<%= product.productId?.images?.[0] || '/images/no-product.jpg' %>" 
+                                                                        alt="<%= product.productId?.title || 'Product removed' %>" 
+                                                                        class="img-thumbnail" 
+                                                                        style="width: 50px; height: 50px; object-fit: cover;">
+                                                                    </td>       
+                                                                    <td>
+                                                                        <% if (product.productId) { %>
+                                                                            <%= product.productId.title %>
+                                                                        <% } else { %>
+                                                                            <em class="text-muted">(Product no longer available)</em>
+                                                                        <% } %>
                                                                     </td>
-                                                                    <td><%= product.productId.title||'Unnamed Product' %></td>
                                                                     <td><%= product.quantity %></td>
                                                                     <td>₹<%= product.priceAtOrder.toFixed(2) %></td>
                                                                 </tr>
@@ -120,20 +133,42 @@
                                 
                                 </div>
                                 
-                                <nav>
-                                    <ul class="pagination justify-content-center">
-                                        <% for (let i = 1; i <= totalPages; i++) { %>
-                                            <li class="page-item <%= currentPage === i ? 'active' : '' %>">
-                                                <a class="page-link" href="/profileOrders?page=<%= i %><%= search ? '&search=' + search : '' %>">
-                                                    <%= i %>
-                                                </a>
-                                            </li>
-                                        <% } %>
-                                    </ul>
-                                </nav>
-                            <% } else { %>
-                                <p class="text-muted">No orders found.</p>
-                            <% } %>
+                                
+    <% if (totalPages > 1) { %>
+        <nav>
+            <ul class="pagination justify-content-center">
+                <!-- Previous -->
+                <% if (hasPrevPage) { %>
+                    <li class="page-item">
+                        <a class="page-link" href="/profileOrders?page=<%= currentPage - 1 %><%= search ? '&search=' + encodeURIComponent(search) : '' %>">
+                            Previous
+                        </a>
+                    </li>
+                <% } %>
+
+                <!-- Page Numbers -->
+                <% for (let i = 1; i <= totalPages; i++) { %>
+                    <li class="page-item <%= currentPage === i ? 'active' : '' %>">
+                        <a class="page-link" href="/profileOrders?page=<%= i %><%= search ? '&search=' + encodeURIComponent(search) : '' %>">
+                            <%= i %>
+                        </a>
+                    </li>
+                <% } %>
+
+                <!-- Next -->
+                <% if (hasNextPage) { %>
+                    <li class="page-item">
+                        <a class="page-link" href="/profileOrders?page=<%= currentPage + 1 %><%= search ? '&search=' + encodeURIComponent(search) : '' %>">
+                            Next
+                        </a>
+                    </li>
+                <% } %>
+            </ul>
+        </nav>
+    <% } %>
+<% } else { %>
+    <p class="text-muted">No orders found.</p>
+<% } %>
                         </div>
                   </div>
     </div>

@@ -30,6 +30,12 @@ const processCheckout = async (req, res) => {
             return res.status(400).send('No items in the cart');
         }
 
+        const validItems = cart.items.filter(item => item.productId !== null);
+        if (validItems.length === 0) {
+            return res.status(400).send('No valid products in cart');
+        }
+        cart.items = validItems;
+        
         let subtotal = 0;
         let offerDiscount = 0;
         const itemsToProcess = [];
@@ -46,6 +52,9 @@ const processCheckout = async (req, res) => {
  
             if (!product) {
                 return res.status(400).send(`Product not found for ID: ${item.productId}`);
+            }
+            if(!product.isActive){
+              return res.status(400).send(`Product not Available now,Make it  wishlisted and buy later.Thank You `)
             }
             if (product.stock < item.quantity) {
                 return res.status(400).send(`Not enough stock for ${product.title}`);
@@ -578,9 +587,9 @@ const retryPayment = async (req, res) => {
           if(!product){
             return res.status(400).json({ success: false, message: `Product data missing for item ${item._id}` });         
           }
-          // if (product.stock < item.quantity) {
-          //   return res.status(400).json({ success: false, message: `Stock of "${product.title}" less than you orderd.[Available : ${product.stock}, You need: ${item.quantity}]` });
-          // }
+          if (product.stock < item.quantity) {
+            return res.status(400).json({ success: false, message: `Stock of "${product.title}" less than you orderd.[Available : ${product.stock}, You need: ${item.quantity}]` });
+          }
         }
         
         // Assuming `razorpayOrderId` and `amount` are saved with the order

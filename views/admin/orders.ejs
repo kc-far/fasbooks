@@ -1,3 +1,28 @@
+<% 
+// Safe URL builder — preserves search, page, sort, status, paymentMethod
+const buildUrl = (newParams = {}) => {
+  const params = new URLSearchParams();
+  
+  // Keep existing filters
+  if (search) params.set('search', search);
+  if (currentPage && currentPage > 1) params.set('page', currentPage);
+  if (query.sort) params.set('sort', query.sort);
+  if (query.status && query.status !== 'all') params.set('status', query.status);
+  if (query.paymentMethod && query.paymentMethod !== 'all') params.set('paymentMethod', query.paymentMethod);
+
+  // Apply new changes
+  Object.entries(newParams).forEach(([key, value]) => {
+    if (value === null || value === undefined || value === 'all') {
+      params.delete(key);
+    } else {
+      params.set(key, value);
+    }
+  });
+
+  const q = params.toString();
+  return `/admin/orders${q ? '?' + q : ''}`;
+};
+%>
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -27,19 +52,211 @@
         <!-- Sidebar -->
         <%- include('partials/sidebar') %>
         <!-- Navbar -->
-        <%- include('partials/navbar') %>
+        <!-- <%- include('partials/navbar') %> -->
+           <nav class="navbar p-0 fixed-top d-flex flex-row">
+    <div class="navbar-brand-wrapper d-flex d-lg-none align-items-center justify-content-center">
+        <a class="navbar-brand brand-logo-mini" href="#"><img src="/assets/images/logo-mini.svg" alt="logo" /></a>
+    </div>
+    <div class="navbar-menu-wrapper flex-grow d-flex align-items-stretch">
+        <button class="navbar-toggler navbar-toggler align-self-center" type="button" data-toggle="minimize">
+            <span class="mdi mdi-menu"></span>
+        </button>
+        <ul class="navbar-nav w-100">
+            <li class="nav-item w-100">
+                <form class="nav-link mt-2 mt-md-0 d-none d-lg-flex search search-form" method="GET" action="/admin/orders">
+                    <input type="text" class="form-control" name="search" id="orderSearch" placeholder="Search by customer or products" >
+                    <button type="submit" class="btn btn-primary ">Search</button>
+                    <a href="/admin/orders" class="btn btn-secondary ms-2 btn-clear p-2 ml-2"  id="clear-search">Clear</a>
+                </form>
+            </li>
+        </ul>
+        <ul class="navbar-nav navbar-nav-right">
+            <li class="nav-item dropdown d-none d-lg-block">
+                
+                <div class="dropdown-menu dropdown-menu-right navbar-dropdown preview-list" aria-labelledby="createbuttonDropdown">
+                    <h6 class="p-3 mb-0">Projects</h6>
+                    <div class="dropdown-divider"></div>
+                    <a class="dropdown-item preview-item">
+                        <div class="preview-thumbnail">
+                            <div class="preview-icon bg-dark rounded-circle">
+                                <i class="mdi mdi-file-outline text-primary"></i>
+                            </div>
+                        </div>
+                        <div class="preview-item-content">
+                            <p class="preview-subject ellipsis mb-1">Software Development</p>
+                        </div>
+                    </a>
+                    <div class="dropdown-divider"></div>
+                    <a class="dropdown-item preview-item">
+                        <div class="preview-thumbnail">
+                            <div class="preview-icon bg-dark rounded-circle">
+                                <i class="mdi mdi-web text-info"></i>
+                            </div>
+                        </div>
+                        <div class="preview-item-content">
+                            <p class="preview-subject ellipsis mb-1">UI Development</p>
+                        </div>
+                    </a>
+                    <div class="dropdown-divider"></div>
+                    <a class="dropdown-item preview-item">
+                        <div class="preview-thumbnail">
+                            <div class="preview-icon bg-dark rounded-circle">
+                                <i class="mdi mdi-layers text-danger"></i>
+                            </div>
+                        </div>
+                        <div class="preview-item-content">
+                            <p class="preview-subject ellipsis mb-1">Software Testing</p>
+                        </div>
+                    </a>
+                    <div class="dropdown-divider"></div>
+                    <p class="p-3 mb-0 text-center">See all projects</p>
+                </div>
+            </li>
+            <li class="nav-item nav-settings d-none d-lg-block">
+                <a class="nav-link" href="#">
+                    <i class="mdi mdi-view-grid"></i>
+                </a>
+            </li>
+            <li class="nav-item dropdown border-left">
+                <a class="nav-link count-indicator dropdown-toggle" id="messageDropdown" href="#" data-toggle="dropdown" aria-expanded="false">
+                    <i class="mdi mdi-email"></i>
+                    <span class="count bg-success"></span>
+                </a>
+                <div class="dropdown-menu dropdown-menu-right navbar-dropdown preview-list" aria-labelledby="messageDropdown">
+                    <h6 class="p-3 mb-0">Messages</h6>
+                    <div class="dropdown-divider"></div>
+                    <a class="dropdown-item preview-item">
+                        <div class="preview-thumbnail">
+                            <img src="/assets/images/faces/face4.jpg" alt="image" class="rounded-circle profile-pic">
+                        </div>
+                        <div class="preview-item-content">
+                            <p class="preview-subject ellipsis mb-1">Mark send you a message</p>
+                            <p class="text-muted mb-0"> 1 Minutes
+                                <p class="text-muted mb-0"> 1 Minute ago</p>
+                            </div>
+                        </a>
+                        <div class="dropdown-divider"></div>
+                        <a class="dropdown-item preview-item">
+                            <div class="preview-thumbnail">
+                                <img src="/assets/images/faces/face2.jpg" alt="image" class="rounded-circle profile-pic">
+                            </div>
+                            <div class="preview-item-content">
+                                <p class="preview-subject ellipsis mb-1">Cregh send you a message</p>
+                                <p class="text-muted mb-0"> 15 Minutes ago</p>
+                            </div>
+                        </a>
+                        <div class="dropdown-divider"></div>
+                        <p class="p-3 mb-0 text-center">See all messages</p>
+                    </div>
+                </li>
+                <li class="nav-item dropdown border-left">
+                    <a class="nav-link count-indicator dropdown-toggle" id="notificationDropdown" href="#" data-toggle="dropdown" aria-expanded="false">
+                        <i class="mdi mdi-bell"></i>
+                        <span class="count bg-danger"></span>
+                    </a>
+                    <div class="dropdown-menu dropdown-menu-right navbar-dropdown preview-list" aria-labelledby="notificationDropdown">
+                        <h6 class="p-3 mb-0">Notifications</h6>
+                        <div class="dropdown-divider"></div>
+                        <a class="dropdown-item preview-item">
+                            <div class="preview-icon bg-dark rounded-circle">
+                                <i class="mdi mdi-alert-circle-outline text-primary"></i>
+                            </div>
+                            <div class="preview-item-content">
+                                <p class="preview-subject ellipsis mb-1">Application Error</p>
+                                <p class="text-muted mb-0"> 30 minutes ago</p>
+                            </div>
+                        </a>
+                        <div class="dropdown-divider"></div>
+                        <p class="p-3 mb-0 text-center">See all notifications</p>
+                    </div>
+                </li>
+                <li class="nav-item nav-settings d-none d-lg-block">
+                    <a class="nav-link" href="#">
+                        <i class="mdi mdi-format-line-spacing"></i>
+                    </a>
+                </li>
+            </ul>
+        </div>
+    </nav>
             <div class="container-fluid page-body-wrapper">
                 <div class="main-panel">
                     <div class="content-wrapper">
                         <div class="card">
                             <div class="card-body">
                                 <h4 class="card-title">Orders</h4>
+                           <div class="d-flex gap-2 flex-wrap">
+                                <!-- Sort Dropdown -->
+                                <div class="dropdown">
+                                    <button class="btn btn-outline-secondary btn-sm dropdown-toggle d-flex align-items-center gap-2" 
+                                        type="button" data-bs-toggle="dropdown">
+                                        <i class="fas fa-sort"></i>
+                                        <span><%= query.sort === 'oldest' ? 'Earliest' : 'Latest' %></span>
+                                    </button>
+                                    <ul class="dropdown-menu">
+                                        <li><a class="dropdown-item <%= query.sort !== 'oldest' ? 'active' : '' %>" 
+                                            href="<%= buildUrl({ sort: 'newest' }) %>">Latest</a></li>
+                                        <li><a class="dropdown-item <%= query.sort === 'oldest' ? 'active' : '' %>" 
+                                            href="<%= buildUrl({ sort: 'oldest' }) %>">Earliest</a></li>
+                                    </ul>
+                                </div>
+
+                                <!-- Status Filter -->
+                                <div class="dropdown ml-1">
+                                    <button class="btn btn-outline-info btn-sm dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                                        Status: <strong><%= query.status && query.status !== 'all' ? query.status.charAt(0).toUpperCase() + query.status.slice(1) : 'All' %></strong>
+                                    </button>
+                                    <ul class="dropdown-menu">
+                                        <li><a class="dropdown-item <%= !query.status || query.status === 'all' ? 'active' : '' %>" 
+                                            href="<%= buildUrl({ status: 'all' }) %>">All Status</a></li>
+                                        <li><hr class="dropdown-divider"></li>
+                                        <li><a class="dropdown-item <%= query.status === 'pending' ? 'active' : '' %>" 
+                                            href="<%= buildUrl({ status: 'pending' }) %>">Pending</a></li>
+                                        <li><a class="dropdown-item <%= query.status === 'paid' ? 'active' : '' %>" 
+                                            href="<%= buildUrl({ status: 'paid' }) %>">Paid</a></li>
+                                        <li><a class="dropdown-item <%= query.status === 'shipped' ? 'active' : '' %>" 
+                                            href="<%= buildUrl({ status: 'shipped' }) %>">Shipped</a></li>
+                                        <li><a class="dropdown-item <%= query.status === 'delivered' ? 'active' : '' %>" 
+                                            href="<%= buildUrl({ status: 'delivered' }) %>">Delivered</a></li>
+                                        <li><a class="dropdown-item <%= query.status === 'cancelled' ? 'active' : '' %>" 
+                                            href="<%= buildUrl({ status: 'cancelled' }) %>">Cancelled</a></li>
+                                        <li><a class="dropdown-item <%= query.status === 'returned' ? 'active' : '' %>" 
+                                            href="<%= buildUrl({ status: 'returned' }) %>">Returned</a></li>
+                                    </ul>
+                                </div>
+
+                                <!-- Payment Method Filter -->
+                                <div class="dropdown ml-1">
+                                    <button class="btn btn-outline-success btn-sm dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                                        Payment: <strong><%= query.paymentMethod && query.paymentMethod !== 'all' ? query.paymentMethod.toUpperCase() : 'All' %></strong>
+                                    </button>
+                                    <ul class="dropdown-menu">
+                                        <li><a class="dropdown-item <%= !query.paymentMethod || query.paymentMethod === 'all' ? 'active' : '' %>" 
+                                            href="<%= buildUrl({ paymentMethod: 'all' }) %>">All Payments</a></li>
+                                        <li><hr class="dropdown-divider"></li>
+                                        <li><a class="dropdown-item <%= query.paymentMethod === 'COD' ? 'active' : '' %>" 
+                                            href="<%= buildUrl({ paymentMethod: 'cashOnDelivery' }) %>">COD</a></li>
+                                        <li><a class="dropdown-item <%= query.paymentMethod === 'razorpay' ? 'active' : '' %>" 
+                                            href="<%= buildUrl({ paymentMethod: 'razorpay' }) %>">Online</a></li>
+                                        <li><a class="dropdown-item <%= query.paymentMethod === 'wallet' ? 'active' : '' %>" 
+                                            href="<%= buildUrl({ paymentMethod: 'wallet' }) %>">Wallet</a></li>
+                                    </ul>
+                                </div>
+
+                                <!-- Clear All Filters Button -->
+                                <% if (query.status || query.paymentMethod || query.sort || search) { %>
+                                    <a href="/admin/orders" class="btn btn-outline-secondary btn-sm ml-1">
+                                        <i class="fas fa-times"></i> Clear 
+                                    </a>
+                                <% } %>
+
+                            </div>
                                 <div class="table-responsive">
                                     <table class="table">
                                         <thead>
                                             <tr>
                                                 <th>Sl. No</th>
                                                 <th>Order ID</th>
+                                                <th>Date</th>
                                                 <th>Customer</th>
                                                 <th>Product</th>
                                                 <th>Quantity</th>
@@ -57,10 +274,49 @@
                                                     <tr>
                                                         <td><%= index + 1 + (currentPage - 1) * 5 %></td>
                                                         <td><%= order.OrderId %></td>
+                                                        <td>
+                                                            <%= new Date(order.createdAt).toLocaleDateString('en-IN', {
+                                                                day: '2-digit',
+                                                                month: 'short',
+                                                                year: 'numeric'
+                                                            }) %>
+                                                            <br>
+                                                            <small class="text-muted">
+                                                                <%= new Date(order.createdAt).toLocaleTimeString('en-IN', {
+                                                                    hour: '2-digit',
+                                                                    minute: '2-digit'
+                                                                }) %>
+                                                            </small>
+                                                        </td>
                                                         <td><%= order.userId ? order.userId.name : 'N/A' %></td>
-                                                        <td><%= order.items[0].productId.title %></td>
-                                                        <td><%= order.items[0].quantity %></td>
-                                                        <td><%= order.paymentMethod %></td>
+                                                        <td>
+                                                            <% const items = order.items?.filter(i => i.productId) || [];
+                                                                 if (items.length === 0) { %>
+                                                                    <em class="text-muted">(No products)</em>
+                                                                <% } else { %>
+                                                                    <strong><%= items[0].productId.title %></strong>
+                                                                    <% if (items.length > 1) { %>
+                                                                        <span class="text-muted ml-2 small">
+                                                                        (+<%= items.length - 1 %> more)</span>
+                                                                    <% } %>
+                                                               <% } %>
+                                                            %>
+                                                        </td>
+                                                       
+                                                        <td class="align-middle text-center">
+                                                                <% 
+                                                                    const totalQty = order.items.reduce((sum, item) => sum + (item.quantity || 0), 0);
+                                                                %>
+                                                                <span class="badge badge-pill badge-dark px-3 py-2">
+                                                                    <%= totalQty %> <%= totalQty === 1 ? 'item' : 'items' %>
+                                                                </span>
+
+                                                        </td>
+                                                        <td>
+                                                            <span class="badge badge-<%= order.paymentMethod === 'COD' ? 'secondary' : 'success' %>">
+                                                                <%= order.paymentMethod || 'N/A' %>
+                                                            </span>
+                                                        </td>
                                                         
                                                         <td>
                                                             <div class="badge <%= order.status === 'pending' ? 'badge-warning' : order.status === 'shipped' ? 'badge-info' : order.status === 'delivered' ? 'badge-success' : order.status === 'paid' ? 'badge-success' : order.status === 'requested' ? 'badge-primary' : order.status === 'returned' ? 'badge-danger' : 'badge-danger' %>">
@@ -152,10 +408,12 @@
                                                                                                     <%= item.titleAtOrder %> x <%= item.quantity %> - ₹<%= item.priceAtOrder ? item.priceAtOrder.toFixed(2) : 'N/A' %>
                                                                                                     <% if (item.isCancelled) { %>
                                                                                                         <span class="badge badge-danger ml-2">Canceled</span>
-                                                                                                    <% } %>
+                                                                                                    <% }else if(item.isReturned){ %>
+                                                                                                        <span class="badge badge-danger ml-2">returned</span>
+                                                                                                    <%}%>
                                                                                                 </div>
                                                                                             </li>
-                                                                                        <% }) %>
+                                                                                        <%})  %>
                                                                                     </ul>
                                                                                 </div>
                                                                             </div>
@@ -178,20 +436,22 @@
                                     
                                 </div>
             
-                                <!-- Pagination Controls -->
-                                <div class="pagination">
-                                    <% if (currentPage > 1) { %>
-                                        <a href="?page=<%= currentPage - 1 %>">Previous</a>
-                                    <% } %>
-            
-                                    <% for (let i = 1; i <= totalPages; i++) { %>
-                                        <a href="?page=<%= i %>" class="<%= i === currentPage ? 'active' : '' %>"><%= i %></a>
-                                    <% } %>
-            
-                                    <% if (currentPage < totalPages) { %>
-                                        <a href="?page=<%= currentPage + 1 %>">Next</a>
-                                    <% } %>
-                                </div>
+                                <!-- Pagination -->
+                                
+<div class="pagination">
+  <% if (currentPage > 1) { %>
+    <a href="<%= buildUrl({ page: currentPage - 1 }) %>">Previous</a>
+  <% } %>
+
+  <% for (let i = 1; i <= totalPages; i++) { %>
+    <a href="<%= buildUrl({ page: i }) %>"
+       class="<%= i === currentPage ? 'active' : '' %>"><%= i %></a>
+  <% } %>
+
+  <% if (currentPage < totalPages) { %>
+    <a href="<%= buildUrl({ page: currentPage + 1 }) %>">Next</a>
+  <% } %>
+</div>
             
                             </div>
                         </div>
@@ -250,6 +510,31 @@
             });
         }
     </script>
-    
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const searchInput = document.getElementById('orderSearch');
+    const clearButton = document.querySelector('.search-form .btn-clear');
+    const searchForm = searchInput.closest('form');
+
+    const isOrderPage = window.location.pathname.includes('/admin/orders');
+    if (isOrderPage) {
+        // Pre-fill search input from URL
+        const urlParams = new URLSearchParams(window.location.search);
+        const searchQuery = urlParams.get('search');
+        if (searchQuery) {
+            searchInput.value = searchQuery;
+            clearButton.style.display = 'inline-block';
+        }
+    }
+    // Clear search when clicking clear button
+    clearButton.addEventListener('click', function(e) {
+        e.preventDefault();
+        searchInput.value = '';
+        this.style.display = 'none';
+        searchForm.submit(); 
+    });
+})
+ </script>  
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>

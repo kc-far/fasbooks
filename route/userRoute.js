@@ -9,6 +9,7 @@ const couponController=require('../controller/couponController');
 const addressController=require('../controller/addressController');
 const profileController=require('../controller/profileController')
 const otherController=require('../controller/otherController')
+const passwordController=require('../controller/passwordController')
 const userAuth = require("../middleware/user/userAuth");
 const nocache = (req, res, next) => {
     res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, private');
@@ -35,12 +36,13 @@ router.post('/verify-otp', userAuth.isLogin, userController.verifyOtp);
 router.post('/resend-otp', userAuth.isLogin, userController.resendOtp);
 
 // Forgot Password
-router.get('/forgot-password', userController.forgotPasswordPage);
-router.post('/forgot-password', userController.forgotPassword);
-router.get('/verify-otp-forgot', userController.verifyOtpPass);
-router.post('/verify-otp-forgot', userController.verifyForgotPasswordOtp);
-router.get('/reset-password', userController.resetPasswordPage);
-router.post('/reset-password', userController.resetPassword);
+router.get('/forgot-password', passwordController.forgotPasswordPage);
+router.post('/forgot-password', passwordController.forgotPassword);
+router.get('/verify-otp-forgot', passwordController.verifyOtpPass);
+router.post('/verify-otp-forgot', passwordController.verifyForgotPasswordOtp);
+router.post('/resend-otp-forgot', passwordController.resendForgotPasswordOtp);
+router.get('/reset-password', passwordController.resetPasswordPage);
+router.post('/reset-password', passwordController.resetPassword);
 
 // home
 router.get('/home', userAuth.checkSession, userController.getHome);

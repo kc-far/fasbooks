@@ -98,12 +98,13 @@ const getOrders = async (req, res) => {
             { OrderId: { $regex: search, $options: 'i' } },
             { status: { $regex: search, $options: 'i' } }
         ] }: {};
+        const finalQuery={ userId, ...query };
         // Query to get total number of orders
-        const totalOrders = await Order.countDocuments(query);
+        const totalOrders = await Order.countDocuments(finalQuery);
         const totalPages = Math.ceil(totalOrders / limit);
          
         // Fetch orders for the current page with pagination and populate product details
-        const orders = await Order.find({ userId })
+        const orders = await Order.find(finalQuery)
             .sort({ createdAt: -1 })
             .skip((page - 1) * limit)
             .limit(limit)
@@ -114,7 +115,9 @@ const getOrders = async (req, res) => {
             user,
             currentPage: page,
             totalPages,
-            search
+            search,
+            hasNextPage: page < totalPages,
+            hasPrevPage: page > 1
         });
     } catch (error) {
         console.error(error);

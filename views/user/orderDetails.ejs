@@ -180,7 +180,7 @@
                                                     order.status === 'returned' ? 'secondary' : 
                                                     'danger' %>">
                                                     <%= order.status %></span>
-                    </h6>
+                  </h6>
                   
                 </div>
                 <div class="col-md-6 text-right">
@@ -195,87 +195,120 @@
               <div class="table-responsive">
                 <table class="table table-borderless">
                   <tbody>
-                    <% let subtotal = 0; let totalDiscount = 0;
-                    order.items.forEach(function(item) {
-                      const itemPrice = item.productId.price * item.quantity;
+                    <% let subtotal = 0; let totalDiscount = 0; %>
+                    <% order.items.forEach(function(item) { 
+                      const itemPrice = item.priceAtOrder * item.quantity;
                       const itemDiscount = item.discount || 0;
                       const discountAmount = itemPrice * (itemDiscount / 100);
                       subtotal += itemPrice;
-                      totalDiscount += discountAmount; %>
+                      totalDiscount += discountAmount;
+                    %>
                     <tr class="border-bottom">
-                        <td class="align-middle p-2">
-                        <img
-                          src="/<%= item.productId.images[0] %>"
-                          alt="IMG"
-                          class="img-thumbnail mr-3"
-                          style="width: 80px; height: 80px; object-fit: cover;"
-                        />
-                      </td>
+                      <!-- Product Image + Clickable (Only if product exists) -->
+                      <td class="align-middle p-2">
+                        <% if (item.productId && item.productId.images && item.productId.images[0]) { %>
+                          <img src="/<%= item.productId.images[0] %>"
+                               alt="<%= item.titleAtOrder %>"
+                               class="img-thumbnail mr-3"
+                               style="width: 80px; height: 80px; object-fit: cover; cursor: pointer;"
+                               onclick="window.location.href='/product-detail/<%= item.productId._id %>'"
+                          />
+                        <% } else { %>
+                          <div style="width: 80px; height: 80px; background: #f0f0f0; border: 1px dashed #ccc; 
+                          display: flex; align-items: center; justify-content: center; border-radius: 8px;">
+                            <small class="text-muted">No Image</small>
+                          </div>
+                        <% } %>
+                      </td>         
                       <td class="align-middle p-2">
                         <h6 class="mb-1">
-                          <%= item.titleAtOrder %>
-                          
+                          <%= item.titleAtOrder || 'Unknown Product' %>
+                          <% if (!item.productId) { %>
+                            <span class="badge badge-secondary ml-2">Deleted</span>
+                          <% } %>
                         </h6>
-                        <small >
-                          Qty: <%= item.quantity %> | Price: ₹<%= item.priceAtOrder ? item.priceAtOrder.toFixed(2) : '0.00' %>
+                        <small class="text-muted">
+                          Qty: <%= item.quantity %> × ₹<%= item.priceAtOrder.toFixed(2) %>
+                          <% if (itemDiscount > 0) { %>
+                             | Discount: <%= itemDiscount %>%
+                          <% } %>
                         </small>
-                      </td>
-                      <td>
-                        <% if (order.status =='returned') { %>
-                            <span class="badge badge-success ml-2">Returned</span>
-                          <% } else if (order.status =='cancelled') { %>
-                            <span class="badge badge-danger ml-2">Cancelled</span>
+                      </td>        
+                      <td class="align-middle text-center">
+                        <% if (order.status === 'returned') { %>
+                          <span class="badge badge-success">Returned</span>
+                        <% } else if (order.status === 'cancelled') { %>
+                          <span class="badge badge-danger">Cancelled</span>
+                        <% } else if (item.isCancelled) { %>
+                          <span class="badge badge-danger">Item Cancelled</span>
+                        <% } else if (item.isReturned) { %>
+                          <span class="badge badge-success">Returned</span>
                         <% } %>
                       </td>
-                      <% if (order.status === 'delivered' && !item.isReturned && !item.isCancelled) { %>
+                      <% if (order.status === 'delivered' && !item.isReturned && !item.isCancelled && item.productId) { %>
                         <td class="align-middle text-center p-2">
                           <% if (item.returnStatus === 'requested') { %>
                             <button class="btn btn-warning btn-sm" disabled>
-                              Return Requested
-                            </button>
-                            <p>Reason: <%= item.returnReason %></p>
+                            Return Requested</button>
+                            <small class="d-block text-muted">Reason: <%= item.returnReason %></small>
                           <% } else { %>
-                            <button
-                              class="btn btn-warning btn-sm"
-                              
-                             onclick="showReturnForm('<%= order._id %>','<%= item.productId._id %>')"
-                            >Request Return</button>
-                             <!-- Hidden Return Form -->
-                  <div id="return-form-<%= order._id %>_<%= item.productId._id %>" class="return-form mt-3" style="display: none;">
-                    <textarea class="form-control mb-2" id="return-reason-<%= order._id %>_<%= item.productId._id %>" rows="3" placeholder="Enter return reason"></textarea>
-                    <button class="btn btn-primary btn-sm" onclick="submitReturnOrder('<%= order._id %>','<%= item.productId._id %>')">Confirm Return</button>
-                    <button class="btn btn-secondary btn-sm" onclick="hideReturnForm('<%= order._id %>','<%= item.productId._id %>')">Close</button>
-                  </div>
+                            <button class="btn btn-outline-danger btn-sm"
+                                    onclick="showReturnForm('<%= order._id %>','<%= item.productId._id %>')">
+                            Request Return </button>
                           <% } %>
                         </td>
-                        <% } else { %>
+                      <% } else { %>
                         <td class="align-middle text-center p-2">
-                          <button class="btn btn-secondary btn-sm" disabled>
-                            Return Not Available
-                          </button>
+                          <button class="btn btn-secondary btn-sm" disabled>Return Not Available</button>
                         </td>
                       <% } %>
-                      <% if ((order.status === 'pending' || order.status === 'paid') && (order.paymentStatus === 'paid'||order.paymentStatus==='pending')&& order.status !== 'delivered' && !item.isCancelled) { %>
+                      <!-- Cancel Button -->
+                      <% if ((order.status === 'pending' || order.status === 'paid') && 
+                              order.paymentStatus !== 'failed' && !item.isCancelled && item.productId) { %>
                         <td class="align-middle text-center p-2">
-                          <button
-                            class="btn btn-danger btn-sm"
-                            onclick="cancelItem('<%= order._id %>', '<%= item.productId._id %>')">
-                            Cancel
-                          </button>
+                          <button class="btn btn-danger btn-sm"
+                                  onclick="cancelItem('<%= order._id %>', '<%= item.productId._id %>')">
+                          Cancel Item</button>
                         </td>
-                      <% } else if (!item.isCancelled) { %>
+                      <% } else { %>
                         <td class="align-middle text-center p-2">
-                          <button class="btn btn-secondary btn-sm" disabled>
-                            Cancel
-                          </button>
+                          <button class="btn btn-secondary btn-sm" disabled>Cancel</button>
                         </td>
                       <% } %>
                     </tr>
+                    <!-- Hidden Return Form -->
+                    <% if (order.status === 'delivered' && !item.isReturned && !item.isCancelled && item.productId) { %>
+                     
+                      <tr id="return-form-<%= order._id %>_<%= item.productId._id %>" class="return-form" style="display: none;">
+                        <td colspan="5" class="p-3 bg-light" style="width: max-content;">
+                          <textarea class="form-control mb-2" 
+                                    id="return-reason-<%= order._id %>_<%= item.productId._id %>" 
+                                    rows="2" 
+                                    placeholder="Please tell us why you want to return this item..."></textarea>
+                          <button class="btn btn-success btn-sm" 
+                                  onclick="submitReturnOrder('<%= order._id %>','<%= item.productId._id %>')">
+                          Submit Request</button>
+                          <button class="btn btn-secondary btn-sm" 
+                                  onclick="hideReturnForm('<%= order._id %>','<%= item.productId._id %>')">
+                          Cancel</button>
+                        </td>
+                      </tr>
+                    <% }else if (item.returnStatus === 'requested') { %>
+                      <td class="text-center">
+                        <button class="btn btn-warning btn-sm" disabled>Return Requested</button>
+                        <br><small class="text-muted d-block mt-1">Reason: <%= item.returnReason || 'N/A' %></small>
+                      </td>
+                    <% }else if (order.status !== 'delivered' || item.isReturned || item.isCancelled || !item.productId){ %>
+                      <td class="text-center text-muted small">Return Not Available</td>
+                    <%}%>
                   <% }) %>
                   </tbody>
                 </table>
               </div>
-              <!-- Delivery Address and Summary -->
+                                     
+ 
+
+               <!--Delivery Address and Summary -->
               <div class="row mt-3">
                 <div class="col-md-6 p-2 ">
                   <h6 class="text-muted">Delivery Address</h6>
@@ -318,7 +351,7 @@
                   { stage: 'Processing', active: ['shipped', 'delivered'].includes(order.status) },
                   { stage: 'Shipped', active: ['shipped', 'delivered'].includes(order.status) },
                   { stage: 'Delivered', active: order.status === 'delivered' }
-                ];
+                ] ;
                 trackingStages.forEach((stage, index) => { %>
                 <li class="mb-2 d-flex align-items-center">
                   <span class="mr-2 rounded-circle <%= stage.active ? 'bg-success' : 'bg-secondary' %>" style="width: 12px; height: 12px;"></span>
@@ -359,19 +392,10 @@
     width: 100%;
     max-width: 600px;
   }
+
 </style>
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script>
-      function showCancelForm(orderId) {
-        const form = document.getElementById(`cancel-form-${orderId}`);
-        form.style.display = 'block';
-    }
-
-    // Hide the cancel form
-    function hideCancelForm(orderId) {
-        const form = document.getElementById(`cancel-form-${orderId}`);
-        form.style.display = 'none';
-    }
 
     // Submit the cancellation
     function submitCancelOrder(orderId) {
@@ -561,7 +585,9 @@ function submitReturnOrder(orderId,productId) {
     });
 }
 
-</script>    
+
+</script>  
+
 <!-- Footer -->
 	<footer class="bg3 p-t-75 p-b-32">
 		<div class="container">

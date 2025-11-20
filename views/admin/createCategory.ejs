@@ -74,17 +74,15 @@
       }
       return valid;
     };
-    console.log(1)
+    
     form.addEventListener("submit", async function (e) {
       e.preventDefault();
 
       if (!validate()) return;
-console.log(2)
       const formData = new FormData(form);
       const data = new URLSearchParams(formData);
-console.log(3)
+
       try {
-        console.log(4)
         const res = await fetch("/admin/addCategory", {
           method: "POST",
           headers: {
@@ -94,9 +92,7 @@ console.log(3)
         });
 
         const result = await res.json();
-console.log(5)
         if (result.success) {
-          console.log(6)
           Swal.fire({
             icon: "success",
             title: "Success",
@@ -105,7 +101,6 @@ console.log(5)
             window.location.href = "/admin/category";
           });
         } else {
-          console.log(6)
           Swal.fire({
             icon: "error",
             title: "Oops...",

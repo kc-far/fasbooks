@@ -86,14 +86,16 @@ const createCategory = async (req, res) => {
               message: "Invalid category name,Please enter a valide category"
           });
       }
+      if (/(.)\1\1/.test(trimmedName)) {
+          return res.status(400).json({
+            message: "Too many repeating characters (e.g., aaa, xxxx not allowed)"
+          });
+      }
 
       // Create category
       const newCategory = new Category({ name: trimmedName });
       await newCategory.save();
-     console.log(8)
       res.status(200).json({success:true, message: "Category Added" })
-
-      
 
   } catch (error) {
       console.error("Error adding category:", error);
@@ -140,55 +142,37 @@ const editCategory = async (req, res) => {
 
     // Validate ID
     if (!mongoose.Types.ObjectId.isValid(id)) {
-      return res.redirect(
-        "/admin/category?error=Invalid category ID."
-      );
+       return res.status(400).json({ success: false, message: "Invalid category ID" });
     }
 
-    // Validate name
-    const validNamePattern = /^[A-Za-z\s ]+$/;
-    if (!name || !validNamePattern.test(name.trim())) {
-      return res.redirect(
-        `/admin/editCategory/${id}?error=Category name must contain only letters and spaces.`
-      );
-    }
+    const trimmedName = name?.trim();
 
-    const trimmedName = name.trim();
-
-    // Check if category exists
-    const existingCategory = await Category.findById(id);
-    if (!existingCategory) {
-      return res.redirect(
-        "/admin/category?error=Category not found."
-      );
-    }
-
-    // Check if the name has actually changed
-    if (
-      existingCategory.name.trim().toLowerCase() === trimmedName.toLowerCase()
-    ) {
-      return res.redirect(
-        `/admin/editCategory/${id}?error=No changes made to the category name.`
-      );
-    }
-
-    // Check for duplicates
+    //check format
+     const validNamePattern = /^[A-Za-z\s]{3,15}$/;
+      if (!validNamePattern.test(trimmedName)) {
+          return res.status(400).json({
+              message: "Invalid category name,Please enter a valide category"
+          })
+      }
+    //check for reapeated characters
+      if (/(.)\1\1/.test(trimmedName)) {
+          return res.status(400).json({
+            message: "Too many repeating characters (e.g., aaa, xxxx not allowed)"
+          });
+      }
+    
     const duplicateCategory = await Category.findOne({
       name: { $regex: new RegExp(`^${trimmedName}$`, "i") },
       _id: { $ne: id },
     });
-
+    // Check for duplicates
     if (duplicateCategory) {
-      return res.redirect(
-        `/admin/editCategory/${id}?error=Category with this name already exists.`
-      );
+      return res.status(400).json({ success: false, message: "Category name already exists" }); 
     }
 
     await Category.findByIdAndUpdate(id, { name: trimmedName }, { new: true });
 
-    res.redirect(
-      "/admin/category?message=Category updated successfully."
-    );
+    res.status(200).json({success:true, message: "Category Updated" })
   } catch (error) {
     console.error("Error updating category:", error);
     res.redirect(
@@ -208,7 +192,6 @@ const deleteCategory = async (req, res) => {
     }
     await Category.findByIdAndUpdate(categoryId, { isActive: false });
     await Book.updateMany({ categoryId, isActive: true }, { isActive: false });
-    //console.log("unlisted successfully")
     res.redirect(
       "/admin/category?message=Category deleted successfully"
     );

@@ -312,7 +312,7 @@
                                                     <input type="file" name="images" id="imageInput1" />
                                                     <input type="file" name="images" id="imageInput2" />
                                                     <input type="file" name="images" id="imageInput3" />
-                                                    <small id="imagesError" class="text-danger"></small>
+                                                    <small id="imagesError" class="text-danger fs-6"></small>
                                                 </div>
                                                 
                                                 <!-- Image Previews and Cropping -->
@@ -587,7 +587,8 @@
                              data-description="<%= book.description %>" 
                              data-price="<%= book.price %>" 
                              data-stock="<%= book.stock %>" 
-                             data-images='<%= JSON.stringify(book.images) %>'  
+                             data-images='<%= JSON.stringify(book.images) %>' 
+                             data-images-count="<%= book.images.length %>" 
                              data-bs-toggle="modal" 
                              data-bs-target="#editProductModal">Edit</button>
 
@@ -597,10 +598,16 @@
                                         <input type="hidden" name="bookId" value="<%= book._id %>">
                                         <button type="submit" class="btn btn-success">Unlist</button>
                                     </form>
-                                <%}else{%>
+                                <%}else {%>
                                         <form id="listForm-<%= book._id %>" action="/admin/activeBook" method="POST" style="display:inline;" onsubmit="return confirmDeleteBook(event, 'Are you sure you want to List this book?', this)">
                                             <input type="hidden" name="bookId" value="<%= book._id %>">
-                                            <button type="submit" class="btn btn-danger">List</button>
+                                            <% if (book.categoryId && !book.categoryId.isActive) { %>
+                                                <button type="submit" class="btn btn-danger" disabled title="Cannot list: Category is blocked">
+                                                List</button>
+                                            <% } else { %>
+                                                <button type="submit" class="btn btn-danger">
+                                                List</button>
+                                            <% } %>
                                         </form>
                                        
                                 <% } %>
@@ -612,41 +619,6 @@
         </tbody>
     </table>
         
-        <!-- SweetAlert2 -->
-        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
-        <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-        
-        <script>
-        function confirmDeleteBook(event,message,form) {
-            event.preventDefault(); // Prevent the form from submitting immediately
-        
-            // Show SweetAlert confirmation dialog
-            Swal.fire({
-                title: 'Are you sure?',
-                icon: 'warning',
-                showCancelButton: true,
-                confirmButtonColor: '#3085d6',
-                cancelButtonColor: '#d33',
-                confirmButtonText: 'Yes',
-                cancelButtonText: 'No, cancel',
-                background: '#000',  
-                color: '#fff'           
-            }).then((result) => {
-                if (result.isConfirmed) {
-                    const button = form.querySelector('button');
-                     button.classList.remove('btn-success', 'btn-danger');
-                     button.classList.add('btn-secondary'); 
-                        
-                    // Submit the form if the user confirms
-                     form.submit();
-                }
-            });
-        
-            return false;  // Always prevent default form submission
-        }
-        </script>
-        
-  
 </div>                           
 
 
@@ -733,17 +705,22 @@
   
   
               <div class="image-upload-grid">
+                 <small id="imageLimitError" class="text-danger fs-6"></small>
               <div class="image-upload-container">
                 <img src="" alt="" id="editImgView1" class="img-preview mb-2">
+               
                 <input class="form-control edit-image-input" type="file" name="eimages" id="eimg1" accept="image/png, image/jpeg, image/jpg" onchange="viewEditImage(event, 1)">
+                <button type="button" class="btn btn-sm  mt-2"onclick="clearThisFile(this)">Cancel</button>
                 <div class="cropper-container" style="display: none;">
                   <img id="editCroppedImg1" alt="Cropped Image">
                   <button type="button" id="editSaveButton1" class="btn btn-primary mt-2">Save Crop</button>
+                  
                 </div>
               </div>
               <div class="image-upload-container">
                 <img src="" alt="" id="editImgView2" class="img-preview mb-2">
                 <input class="form-control edit-image-input" type="file" name="eimages" id="eimg2" accept="image/png, image/jpeg, image/jpg" onchange="viewEditImage(event, 2)">
+                <button type="button" class="btn btn-sm  mt-2"onclick="clearThisFile(this)">Cancel</button>
                 <div class="cropper-container" style="display: none;">
                   <img id="editCroppedImg2" alt="Cropped Image">
                   <button type="button" id="editSaveButton2" class="btn btn-primary mt-2">Save Crop</button>
@@ -752,6 +729,7 @@
               <div class="image-upload-container">
                 <img src="" alt="" id="editImgView3" class="img-preview mb-2">
                 <input class="form-control edit-image-input" type="file" name="eimages" id="eimg3" accept="image/png, image/jpeg, image/jpg" onchange="viewEditImage(event, 3)">
+                <button type="button" class="btn btn-sm  mt-2"onclick="clearThisFile(this)">Cancel</button>
                 <div class="cropper-container" style="display: none;">
                   <img id="editCroppedImg3" alt="Cropped Image">
                   <button type="button" id="editSaveButton3" class="btn btn-primary mt-2">Save Crop</button>
@@ -772,133 +750,10 @@
                                 <%- include('partials/footer') %>
                             </div>
                         </div>
-                        
-                        <script>
-                            
-                            // document.addEventListener('DOMContentLoaded', () => {
-                            //     const editProductModal = document.getElementById('editProductModal');
-                            //     editProductModal.addEventListener('show.bs.modal', (event) => {
-                            //         const button = event.relatedTarget;
-                        
-                            //         const bookId = button.getAttribute('data-id');
-                            //         const bookTitle = button.getAttribute('data-title');
-                            //         const bookAuthor = button.getAttribute('data-author');
-                            //         const bookDescription = button.getAttribute('data-description');
-                            //         const bookPrice = button.getAttribute('data-price');
-                            //         const bookImages = JSON.parse(button.getAttribute('data-images'));
-                            //         const bookStock = button.getAttribute('data-stock');
-                        
-                            //         document.getElementById('bookId').value = bookId;
-                            //         document.getElementById('editBookTitle').value = bookTitle;
-                            //         document.getElementById('editBookAuthor').value = bookAuthor;
-                            //         document.getElementById('editBookDescription').value = bookDescription;
-                            //         document.getElementById('editBookPrice').value = bookPrice;
-                            //         document.getElementById('editBookStock').value = bookStock;
-                        
-                            //         const existingImagesContainer = document.getElementById('existingImages');
-                            //         existingImagesContainer.innerHTML = '';
-                            //         existingImagesContainer.classList.add('d-flex', 'flex-column', 'gap-3'); // Change to flex-column for vertical alignment
-
-                            //         bookImages.forEach((image, index) => {
-                            //             const imageElement = `
-                            //                 <div style="width: 100%; max-width: 150px"> <!-- Control width for consistent sizing -->
-                            //                 <img src="/${image}" alt="Book Image ${index + 1}" style="width: 100%; height: auto;">
-                            //                 <button type="button"onclick="removeImage('${bookId}', ${index})" class="btn btn-sm btn-dark "style="position: absolute;" >
-                            //                     x
-                            //                 </button>
-                            //                 </div>`;
-                            //             existingImagesContainer.innerHTML += imageElement;
-                            //         });
-
-                            //     });
-  
-                            // })   
-                                // function removeImage(bookId, index){
-                                //     Swal.fire({
-                                //         title: 'Remove image?', icon: 'warning', showCancelButton: true, confirmButtonColor: '#3085d6',
-                                //         cancelButtonColor: '#d33', confirmButtonText: 'Yes', background: '#000', color: '#fff',
-                                //     }).then((result) => {
-                                //         if (result.isConfirmed) {
-                                //             fetch('/admin/remove-image', {
-                                //                 method: 'POST', 
-                                //                 headers: { 'Content-Type': 'application/json' }, 
-                                //                 body: JSON.stringify({ bookId, index }),
-                                //             })
-                                //             .then(response => response.json())
-                                //             .then(data => { 
-                                //                 if (data.success) window.location.reload(); 
-                                //                 else throw new Error(data.error || 'Failed to remove image'); })
-                                //             .catch(error => {
-                                //                  console.error('Error:', error);
-                                //                 Swal.fire({ icon: 'error', title: 'Error', text: error.message, confirmButtonColor: '#d33', background: '#000', color: '#fff' });
-                                //             });
-                                //         }
-                                //     });
-                                // }
-                        
-// document.querySelectorAll('input[type="file"]').forEach((input,index) => {
-//     input.addEventListener('change', function() {
-//         const imagePreviewContainer=document.getElementById('existingImages')
-//         imagePreviewContainer.innerHTML += `<h5>New Image Added</h5>`;
-        
-        
-//         const file=this.file[0]
-//         if(file){
-
-        
-//         const reader = new FileReader();
-//         reader.onload = function(e) {
-//             const imageElement = `
-//                 <div class="col-sm-4 mb-3">
-//                     <img src="${e.target.result}" alt="Uploaded Image ${position}">
-//                 </div>`;
-//             //document.getElementById('existingImages').innerHTML += imageElement;
-//             imagePreviewContainer.innerHTML+=imageElement
-//         };
-//         reader.readAsDataURL(file);
-//     }
-//     });
-// });
-          
-//       // Function to preview single image
-//  function previewImage(input) {
-//     if (input.files && input.files[0]) {
-//         let reader = new FileReader();
-//         reader.onload = function (e) {
-//             // Clear previous images
-//             const previewContainer = document.getElementById('imagePreview');
-//             previewContainer.innerHTML = '';
-
-//             let img = document.createElement('img');
-//             img.src = e.target.result;
-//             img.style.width = '150px'; 
-//             img.style.height = '150px'; 
-//             img.style.objectFit = 'cover'; // Ensures aspect ratio is preserved
-//             img.style.border = '1px solid #ddd'; 
-//             img.style.borderRadius = '5px'; 
-
-//             previewContainer.appendChild(img);
-//         };
-//         reader.readAsDataURL(input.files[0]);
-//     }
-// }
-
-                        
-                              
-                            //});
-
-
-
-
-
-
-
-</script>
+                    
 <script>
 
 document.addEventListener('DOMContentLoaded', () => {
-  
-
   
   const imagePreviewContainer = document.getElementById('image-preview-container');
   const imagePreviewsDiv = document.getElementById('imagePreviews');
@@ -914,10 +769,11 @@ document.addEventListener('DOMContentLoaded', () => {
    
     addCropperInstances = [];
     if (imagePreviewContainer) imagePreviewContainer.style.display = 'none';
-    if (imagePreviewsDiv) imagePreviewsDiv.innerHTML = '';
+    if (imagePreviewsDiv) imagePreviewsDiv.innerHTML = '';                                                                                   
   });
 
   const addFileInputs = document.querySelectorAll('input[type="file"][name="eimages"]');
+  
   addFileInputs.forEach((input, index) => {
     
     input.addEventListener('change', function (event) {
@@ -982,7 +838,7 @@ document.addEventListener('DOMContentLoaded', () => {
     
     bookImages.forEach((image, index) => {
       existingImagesContainer.innerHTML += `
-        <div style="width: 100%; max-width: 150px; position: relative;">
+        <div data-index="${index}" style="width: 100%; max-width: 150px; position: relative;">
           <img src="/${image}" alt="Book Image ${index + 1}" style="width: 100%; height: auto; object-fit: cover;">
           <button type="button" onclick="removeImage('${bookId}', ${index})" class="btn btn-sm btn-dark" style="position: absolute; ">
             x
@@ -995,8 +851,6 @@ document.addEventListener('DOMContentLoaded', () => {
     
   });
 
-
-
   const editFileInputs = document.querySelectorAll('.edit-image-input');
   editFileInputs.forEach((input) => {
     
@@ -1007,7 +861,6 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   //  form submission 
-  
   const editBookForm = document.getElementById('editBookForm');
   editBookForm.addEventListener('submit', async function (event) {
     
@@ -1027,9 +880,7 @@ document.addEventListener('DOMContentLoaded', () => {
         
         formData.append('images', input.files[0]);
       }
-    });
-
-    
+    });   
     try {
       
       const response = await fetch('/admin/editBooks', { method: 'POST', body: formData });
@@ -1046,16 +897,37 @@ document.addEventListener('DOMContentLoaded', () => {
         } else {
           Swal.fire({ icon: 'error', title: 'Oops!', text: errorText || 'Error updating book.', confirmButtonColor: '#d33' });
         }
+       
       }
     } catch (err) {
       console.error('Fetch error:', err);
       Swal.fire({ icon: 'error', title: 'Oops!', text: 'Network error occurred.', confirmButtonColor: '#d33' });
     }
   });
+  document.getElementById('editProductModal').addEventListener('show.bs.modal', function (event) {
+  const button = event.relatedTarget;
+  const imageCount = parseInt(button.getAttribute('data-images-count')) || 0;
+  const fileInputs = document.querySelectorAll('input[name="eimages"]');
+  const error=document.getElementById('imageLimitError')
+
+  if (imageCount >= 4) {
+    fileInputs.forEach(input => {
+      input.disabled = true;
+      error.textContent='Maximum image limit reached,Remove existing one to add new one'
+    });
+  }else{
+    fileInputs.forEach(input => {
+      input.disabled = false;
+      input.style.display = 'block';
+      error.textContent=''
+    });
+  }
+})
 
  
 });
-  function viewEditImage(event, index) {
+//for view image
+function viewEditImage(event, index) {
     
     const input = event.target;
     const reader = new FileReader();
@@ -1113,8 +985,9 @@ document.addEventListener('DOMContentLoaded', () => {
     };
     
     reader.readAsDataURL(input.files[0]);
-  }
-   function removeImage(bookId, index) {
+}
+//remove image script
+function removeImage(bookId, index) {
     Swal.fire({
       title: 'Remove image?', icon: 'warning', showCancelButton: true, confirmButtonColor: '#3085d6',
       cancelButtonColor: '#d33', confirmButtonText: 'Yes', background: '#000', color: '#fff',
@@ -1129,8 +1002,12 @@ document.addEventListener('DOMContentLoaded', () => {
               
               const existingImagesContainer = document.getElementById('existingImages');
               const imageDiv = existingImagesContainer.querySelector(`div[data-index="${index}"]`);
-              if (imageDiv) {
-                imageDiv.remove();}
+              const error=document.getElementById('imageLimitError')
+              if (imageDiv) imageDiv.remove();
+              document.querySelectorAll('input[name="eimages"]').forEach(input => {
+                input.disabled = false;
+                error.textContent=''
+              });
              
             }  
             else throw new Error(data.error || 'Failed to remove image'); })
@@ -1140,11 +1017,50 @@ document.addEventListener('DOMContentLoaded', () => {
           });
       }
     });
+}
+//cancel selected file
+function clearThisFile(button) {
+  const container = button.closest('.image-upload-container');
+  const input = container.querySelector('input[type="file"]');
+  const preview = container.querySelector('img');
+
+  input.value = "";           
+  if (preview) {
+    preview.src = "";
+    preview.style.display = 'none';
   }
+}
 </script>
-
-
-    
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>   
+<script>
+        function confirmDeleteBook(event,message,form) {
+            event.preventDefault(); // Prevent the form from submitting immediately
+        
+            // Show SweetAlert confirmation dialog
+            Swal.fire({
+                title: 'Are you sure?',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#3085d6',
+                cancelButtonColor: '#d33',
+                confirmButtonText: 'Yes',
+                cancelButtonText: 'No, cancel',
+                background: '#000',  
+                color: '#fff'           
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    const button = form.querySelector('button');
+                     button.classList.remove('btn-success', 'btn-danger');
+                     button.classList.add('btn-secondary'); 
+                        
+                    // Submit the form if the user confirms
+                     form.submit();
+                }
+            });
+        
+            return false;  
+        }
+</script>
     <!-- Bootstrap JS (including Popper.js for modals) -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     

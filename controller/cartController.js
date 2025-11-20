@@ -30,6 +30,9 @@ const addToCart = async (req, res) => {
         if (!product) {
             return res.status(404).json({ success: false, message: 'Product not found' });
         }
+        if(!product.isActive){
+          return res.status(404).json({ success: false, message: 'Product is not available now' })
+        }
 
         const existingItemIndex = cart.items.findIndex(item => item.productId.toString() === productId);
         let currentQuantityInCart = 0;

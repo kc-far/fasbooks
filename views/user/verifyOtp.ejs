@@ -94,7 +94,9 @@
         </div>
     </div>
     
-    <script src="https://unpkg.com/sweetalert/dist/sweetalert.min.js"></script>
+    <!-- <script src="https://unpkg.com/sweetalert/dist/sweetalert.min.js"></script> -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script>
         document.addEventListener('DOMContentLoaded', function () {
             let countdown = parseInt(localStorage.getItem('otpCountdown')) || 60;
@@ -146,8 +148,8 @@
                 .then(data => {
                     if (data.success) {
                         //alert(data.message);
-                        swal.fire({
-                            icon:success,
+                        Swal.fire({
+                            icon:'success',
                             text:data.message
                         });
                         countdown = 60; 
@@ -155,8 +157,8 @@
                         startTimer(); 
                     } else {
                         //alert(data.message); 
-                        swal.fire({
-                            icon:warning,
+                        Swal.fire({
+                            icon:'warning',
                             text:data.message
                         })
                     }

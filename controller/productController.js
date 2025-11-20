@@ -101,7 +101,7 @@ const getBooks = async (req, res) => {
         const books = await Book.find(filter)
             .populate({
                 path: 'categoryId',
-                select: 'name'
+                select: 'name isActive'
             })
             .skip(skip)
             .limit(parsedLimit)
@@ -129,6 +129,7 @@ const editBooks = async (req, res) => {
   try {
     
     const { id, title, author, description, price, stock } = req.body;
+    let maxImageLimit=4
 
     const book = await Book.findById(id);
     if (!book) {
@@ -142,15 +143,21 @@ const editBooks = async (req, res) => {
     book.price = price || book.price;
     book.stock = stock || book.stock;
 
-    const images=[]
     if(req.files && req.files.length>0){
-        for(i=0;i<req.files.length;i++){
-            images.push(req.files[i].filename)
+        
+        let currentImages=book.images.length
+        let newImages=req.files.length
+        let totalImages=currentImages+newImages
+
+        if(totalImages>maxImageLimit){
+           const allowed=maxImageLimit-currentImages
+           return res.status(400).json({  error: `You can add  ${allowed} image,more than not allowed.`});
+
         }
+        const uploaded = req.files.map(f => f.filename);
+        book.images.push(...uploaded);
     }
-    if(images.length>0){
-        book.images.push(...images)
-    }
+    
     await book.save();
    
     res.redirect('/admin/products?message=Book Updated');
@@ -188,7 +195,7 @@ const deleteBook = async (req, res) => {
         }
         await Book.findByIdAndUpdate(bookId, { isActive: false });
         res.redirect(
-          "/admin/products?message=Category deleted successfully"
+          "/admin/products?message=Product deleted successfully"
         );
       } catch (error) {
         console.error("Error deleting book:", error);
@@ -230,7 +237,7 @@ const getProducts = async (req, res) => {
             }
 
         if (search) {
-            filter.title = new RegExp(search, 'i'); // Case-insensitive search on title
+            filter.title = new RegExp(search, 'i'); 
         }
 
         let sortCriteria = {};
@@ -332,7 +339,8 @@ const getProductDetail = async (req, res) => {
 
         const product = await Book.findOne({ _id: productId, isActive: true }).populate('categoryId');
         if (!product) {
-            return res.status(404).render('404', { message: 'Product not found' });
+            //return res.status(404).render('404', { message: 'Product not found' });
+            return res.redirect('/products')
         }
 
         const offers = await Offer.find({ isActive: true });

@@ -66,40 +66,46 @@ const renderDashboard = (req, res) => {
 const getDashboardData = async (req, res) => {
     try {
         const period = req.query.period || 'monthly';
-        let dateFilter;
+        let startDate;
  
         // Define date filter based on the selected period
         const now = new Date();
         switch (period) {
             case 'daily':
-                dateFilter = { $gte: new Date(now.setDate(now.getDate() - 1)) };
+                startDate = new Date(now.getFullYear(), now.getMonth(), now.getDate());
                 break;
-            case 'weekly':
-                dateFilter = { $gte: new Date(now.setDate(now.getDate() - 7)) };
+            case 'weekly':              
+                startDate =  new Date(now.setDate(now.getDate() - 7)) 
                 break;
             case 'monthly':
-                dateFilter = { $gte: new Date(now.setMonth(now.getMonth() - 1)) };
+                startDate = new Date(now.getFullYear(), now.getMonth(), 1);
                 break;
             case 'yearly':
-                dateFilter = { $gte: new Date(now.setFullYear(now.getFullYear() - 1)) };
+                startDate = new Date(now.getFullYear(), 0, 1);
                 break;
             default:
-                dateFilter = {};
+                startDate = new Date(0); // all time
         }
+        const dateFilter = { $gte: startDate };
 
-        //const deliveredFilter = { status: 'delivered' };
+        // 1. TOTAL ORDERS (All statuses — this is what matters!)
+        const totalOrdersInPeriod = await Order.countDocuments({
+            createdAt: dateFilter
+        });
 
-        const salesSummary = await Order.aggregate([
+        // 2. DELIVERED ORDERS → Real Revenue
+        const deliveredOrders = await Order.aggregate([
             { $match: { createdAt: dateFilter, status: 'delivered' } },
             {
                 $group: {
                     _id: null,
-                    totalSalesCount: { $sum: { $size: "$items" } },
                     totalRevenue: { $sum: "$total" },
-                    totalDiscount: { $sum: "$discount" }
+                    totalDiscount: { $sum: "$discount" },
+                    itemsSold: { $sum: { $sum: "$items.quantity" } }
                 }
             }
         ]);
+        const revenueData = deliveredOrders[0] || { totalRevenue: 0, totalDiscount: 0, itemsSold: 0 };
 
         const bestSellingProducts = await Order.aggregate([
             { $match: { createdAt: dateFilter, status: 'delivered' } },
@@ -183,7 +189,10 @@ const getDashboardData = async (req, res) => {
         const totalUsers = await User.countDocuments();
 
         res.json({
-            salesSummary: salesSummary[0] || { totalSalesCount: 0, totalRevenue: 0, totalDiscount: 0 },
+            //salesSummary: salesSummary[0] || { totalSalesCount: 0, totalRevenue: 0, totalDiscount: 0 },
+            totalOrders:totalOrdersInPeriod,
+            totalRevenue:revenueData.totalRevenue,
+            totalDiscount:revenueData.totalDiscount,
             bestSellingProducts,
             bestSellingCategories,
             totalUsers,
@@ -276,34 +285,95 @@ const unblockUser = async (req, res) => {
 };
 
 
+// const getOrders = async (req, res) => {
+//     try {
+//         const page = parseInt(req.query.page) || 1; 
+//         const limit = 5; 
+//         const skip = (page - 1) * limit; // Calculate the number of orders to skip
 
-
+//         const totalOrders = await Order.countDocuments(); 
+//         const orders = await Order.find()
+//             .populate('items.productId')
+//             .populate('userId')
+//             .limit(limit)
+//             .skip(skip) 
+//             .sort({createdAt:-1})
+//         const totalPages = Math.ceil(totalOrders / limit); 
+        
+//         // Render the EJS view and pass the orders data, current page, and total pages
+//         res.render('admin/orders', 
+//             { orders, 
+//               currentPage: page, 
+//               totalPages,
+                
+//             }); 
+//     } catch (error) {
+//         console.error('Error fetching orders:', error);
+//         res.status(500).send('Error fetching orders');
+//     }
+// };
 
 const getOrders = async (req, res) => {
     try {
-        const page = parseInt(req.query.page) || 1; 
-        const limit = 5; 
-        const skip = (page - 1) * limit; // Calculate the number of orders to skip
+        const page = parseInt(req.query.page) || 1;
+        const limit = 5;
+        const skip = (page - 1) * limit;
 
-        const totalOrders = await Order.countDocuments(); 
-        const orders = await Order.find()
+        // ===== BUILD SEARCH FILTER =====
+        let filter = {};
+        let search = "";
+
+        if (req.query.search) {
+            search = req.query.search.trim();
+            if (search) {
+                filter.$or = [
+                    { 'userId.name': { $regex: search, $options: 'i' } },
+                    { 'items.titleAtOrder': { $regex: search, $options: 'i' } }
+                ];
+            }
+        }
+        //sort
+        let sort = { createdAt: -1 }; // Default: newest first
+if (req.query.sort === 'oldest') {
+    sort = { createdAt: 1 }; // oldest first
+}
+
+if (req.query.status && req.query.status !== 'all') {
+  filter.status = req.query.status;
+}
+if (req.query.paymentMethod && req.query.paymentMethod !== 'all') {
+  const method = req.query.paymentMethod.trim();
+    filter.paymentMethod = { $regex: method, $options: 'i' };
+}
+        // ===== FETCH ORDERS WITH FILTER + PAGINATION =====
+        const orders = await Order.find(filter)
             .populate('items.productId')
-            .populate('userId')
-            .limit(limit)
-            .skip(skip) 
-            .sort({createdAt:-1})
-        const totalPages = Math.ceil(totalOrders / limit); 
+            .populate({
+                path:'userId', 
+                select:'name email'
+            })
+            .sort(sort)
+            .skip(skip)
+            .limit(limit);
 
-       
-    
-        // Render the EJS view and pass the orders data, current page, and total pages
-        res.render('admin/orders', { orders, currentPage: page, totalPages }); // Make sure 'admin/orders' matches your EJS view file
+        
+        // ===== COUNT TOTAL MATCHING ORDERS (for correct pagination) =====
+        const totalOrders = await Order.countDocuments(filter);
+        const totalPages = Math.ceil(totalOrders / limit);
+
+        res.render('admin/orders', {
+            orders,
+            currentPage: page,
+            totalPages,
+            search: req.query.search || '',
+            query: req.query  // important for preserving in pagination links
+        });
+
     } catch (error) {
         console.error('Error fetching orders:', error);
-        res.status(500).send('Error fetching orders');
+        res.status(500).send('Server Error');
     }
 };
-
 // Update order status
 const orderStatus = async (req, res) => {
   try {
