@@ -54,8 +54,8 @@
 
     
     
-
-   <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script>
   document.addEventListener("DOMContentLoaded", function () {
     const form = document.getElementById("addCategoryForm");
@@ -74,12 +74,11 @@
       }
       return valid;
     };
-
+    
     form.addEventListener("submit", async function (e) {
       e.preventDefault();
 
       if (!validate()) return;
-
       const formData = new FormData(form);
       const data = new URLSearchParams(formData);
 
@@ -93,7 +92,6 @@
         });
 
         const result = await res.json();
-
         if (result.success) {
           Swal.fire({
             icon: "success",
@@ -110,6 +108,7 @@
           });
         }
       } catch (err) {
+        console.log(err)
         Swal.fire({
           icon: "error",
           title: "Server Error",

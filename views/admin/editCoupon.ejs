@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <title>Create Coupon</title>
+    <link rel="stylesheet" href="/assets/vendors/mdi/css/materialdesignicons.min.css">
+    <link rel="stylesheet" href="/assets/vendors/css/vendor.bundle.base.css">
+    <link rel="stylesheet" href="/assets/vendors/jvectormap/jquery-jvectormap.css">
+    <link rel="stylesheet" href="/assets/vendors/flag-icon-css/css/flag-icon.min.css">
+    <link rel="stylesheet" href="/assets/vendors/owl-carousel-2/owl.carousel.min.css">
+    <link rel="stylesheet" href="/assets/vendors/owl-carousel-2/owl.theme.default.min.css">
+    <link rel="stylesheet" href="/assets/css/style.css">
+    <link rel="shortcut icon" href="/assets/images/favicon.png" />
+</head>
+
+<body>
+    <div class="container-scroller">
+        <%- include('partials/sidebar') %>
+        <%- include('partials/navbar') %>
+
+        <div class="container-fluid page-body-wrapper">
+            <div class="main-panel">
+                <div class="content-wrapper">
+                    <h4 class="card-title">Edit Coupon</h4>
+                    <% if (error) { %>
+                        <div class="alert alert-danger" role="alert">
+                            <%= error %>
+                        </div>
+                    <% } %>
+                    <% if (message) { %>
+                        <div class="alert alert-success" role="alert">
+                            <%= message %>
+                        </div>
+                    <% } %>
+                    <div class="card">
+                        <div class="card-body">
+                            <form action="/admin/editCoupon/<%= coupon._id %>" method="POST">
+                                <div class="mb-3">
+                                    <label for="couponCode" class="form-label">Coupon Code</label>
+                                    <input type="text" class="form-control" id="couponCode" name="code" value="<%= coupon.code %>" >
+                                </div>
+                                <div class="mb-3">
+                                    <label for="discount" class="form-label">Discount Percentage</label>
+                                    <input type="number" class="form-control" id="discount" name="discount" value="<%= coupon.discount %>" >
+                                </div>
+                                <div class="mb-3">
+                                    <label for="minOrderValue" class="form-label">Minimum Order Value</label>
+                                    <input type="number" class="form-control" id="minOrderValue" name="minOrderValue" value="<%= coupon.minOrderValue %>"  >
+                                </div>
+                                <div class="mb-3">
+                                    <label for="validFrom" class="form-label">Valid From</label>
+                                    <input type="date" class="form-control" id="validFrom" name="validFrom" value="<%= coupon.validFrom.toISOString().split('T')[0] %>" >
+                                </div>
+                                <div class="mb-3">
+                                    <label for="validUntil" class="form-label">Valid Until</label>
+                                    <input type="date" class="form-control" id="validUntil" name="validUntil" value="<%= coupon.validUntil.toISOString().split('T')[0] %>" >
+                                </div>
+                                <button type="submit" class="btn btn-primary">Update Coupon</button>
+                                <a href="/admin/coupons" class="btn btn-secondary">Cancel</a>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap JS and dependencies (Popper.js) -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
+
+    <!-- plugins:js -->
+    <script src="/assets/vendors/js/vendor.bundle.base.js"></script>
+</body>
+</html>

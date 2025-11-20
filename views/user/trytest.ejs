@@ -1,0 +1,240 @@
+<div class="table-responsive">
+                <table class="table table-borderless">
+                  <tbody>
+                    <% let subtotal = 0; let totalDiscount = 0;
+                    order.items.forEach(function(item) {
+                      const itemPrice = item.productId.price * item.quantity;
+                      const itemDiscount = item.discount || 0;
+                      const discountAmount = itemPrice * (itemDiscount / 100);
+                      subtotal += itemPrice;
+                      totalDiscount += discountAmount; %>
+                    <tr class="border-bottom">
+                        <td class="align-middle p-2">
+                        <img
+                          src="/<%= item.productId.images[0] %>"
+                          alt="IMG"
+                          class="img-thumbnail mr-3"
+                          style="width: 80px; height: 80px; object-fit: cover;"
+                        />
+                      </td>
+                      <td class="align-middle p-2">
+                        <h6 class="mb-1">
+                          <%= item.titleAtOrder %>
+                          
+                        </h6>
+                        <small >
+                          Qty: <%= item.quantity %> | Price: ₹<%= item.priceAtOrder ? item.priceAtOrder.toFixed(2) : '0.00' %>
+                        </small>
+                      </td>
+                      <td>
+                        <% if (order.status =='returned') { %>
+                            <span class="badge badge-success ml-2">Returned</span>
+                          <% } else if (order.status =='cancelled') { %>
+                            <span class="badge badge-danger ml-2">Cancelled</span>
+                        <% } %>
+                      </td>
+                      <% if (order.status === 'delivered' && !item.isReturned && !item.isCancelled) { %>
+                        <td class="align-middle text-center p-2">
+                          <% if (item.returnStatus === 'requested') { %>
+                            <button class="btn btn-warning btn-sm" disabled>
+                              Return Requested
+                            </button>
+                            <p>Reason: <%= item.returnReason %></p>
+                          <% } else { %>
+                            <button
+                              class="btn btn-warning btn-sm"
+                              
+                             onclick="showReturnForm('<%= order._id %>','<%= item.productId._id %>')"
+                            >Request Return</button>
+                             <!-- Hidden Return Form -->
+                  <div id="return-form-<%= order._id %>_<%= item.productId._id %>" class="return-form mt-3" style="display: none;">
+                    <textarea class="form-control mb-2" id="return-reason-<%= order._id %>_<%= item.productId._id %>" rows="3" placeholder="Enter return reason"></textarea>
+                    <button class="btn btn-primary btn-sm" onclick="submitReturnOrder('<%= order._id %>','<%= item.productId._id %>')">Confirm Return</button>
+                    <button class="btn btn-secondary btn-sm" onclick="hideReturnForm('<%= order._id %>','<%= item.productId._id %>')">Close</button>
+                  </div>
+                          <% } %>
+                        </td>
+                        <% } else { %>
+                        <td class="align-middle text-center p-2">
+                          <button class="btn btn-secondary btn-sm" disabled>
+                            Return Not Available
+                          </button>
+                        </td>
+                      <% } %>
+                      <% if ((order.status === 'pending' || order.status === 'paid') && (order.paymentStatus === 'paid'||order.paymentStatus==='pending')&& order.status !== 'delivered' && !item.isCancelled) { %>
+                        <td class="align-middle text-center p-2">
+                          <button
+                            class="btn btn-danger btn-sm"
+                            onclick="cancelItem('<%= order._id %>', '<%= item.productId._id %>')">
+                            Cancel
+                          </button>
+                        </td>
+                      <% } else if (!item.isCancelled) { %>
+                        <td class="align-middle text-center p-2">
+                          <button class="btn btn-secondary btn-sm" disabled>
+                            Cancel
+                          </button>
+                        </td>
+                      <% } %>
+                    </tr>
+                  <% }) %>
+                  </tbody>
+                </table>
+              </div>
+
+
+
+
+
+
+
+
+
+
+
+
+
+ <!-- change email  -->
+  <div class="modal fade" id="changeEmailModal">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5>Change Email Address</h5>
+        <button type="button" class="close" data-dismiss="modal">×</button>
+      </div>
+      <div class="modal-body">
+        <!-- Step 1: Enter new email + password -->
+        <div id="step1">
+          <div class="form-group">
+            <label>New Email</label>
+            <input type="email" id="newEmail" class="form-control" required>
+          </div>
+          <div class="form-group">
+            <label>Current Password (for security)</label>
+            <input type="password" id="currentPassword" class="form-control" required>
+          </div>
+          <button class="btn btn-primary" onclick="sendEmailOtp()">Send OTP</button>
+        </div>
+
+        <!-- Step 2: Enter OTP -->
+        <div id="step2" style="display:none;">
+          <p class="text-success">OTP sent to <strong id="maskedEmail"></strong></p>
+          <div class="form-group">
+            <label>Enter 6-digit OTP</label>
+            <input type="text" id="otp" class="form-control" maxlength="6" required>
+          </div>
+          <button class="btn btn-success" onclick="verifyEmailOtp()">Verify & Update</button>
+          <button class="btn btn-link" onclick="resendEmailOtp()">Resend OTP</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+
+
+ <button class="btn btn-outline-warning btn-sm"
+                                    onclick="showReturnForm('<%= order._id %>','<%= item.productId._id %>')">
+                               Request Return </button>
+//return hidden form
+<!-- Hidden Return Form -->
+                    <% if (order.status === 'delivered' && !item.isReturned && !item.isCancelled && item.productId) { %>
+                      <tr id="return-form-<%= order._id %>_<%= item.productId._id %>" class="return-form" style="display: none;">
+                        <td colspan="5" class="p-3 bg-light">
+                          <textarea class="form-control mb-2" 
+                                    id="return-reason-<%= order._id %>_<%= item.productId._id %>" 
+                                    rows="2" 
+                                    placeholder="Please tell us why you want to return this item..."></textarea>
+                          <button class="btn btn-success btn-sm" 
+                                  onclick="submitReturnOrder('<%= order._id %>','<%= item.productId._id %>')">
+                          Submit Return Request</button>
+                          <button class="btn btn-secondary btn-sm" 
+                                  onclick="hideReturnForm('<%= order._id %>','<%= item.productId._id %>')">
+                          Cancel</button>
+                        </td>
+                      </tr>
+                    <% } %>
+
+
+
+
+
+
+
+
+
+
+
+
+//order pagination
+<!-- Pagination Controls -->
+                                <div class="pagination">
+                                    <% if (currentPage > 1) { %>
+                                        <a href="?page=<%= currentPage - 1 %>">Previous</a>
+                                    <% } %>
+            
+                                    <% for (let i = 1; i <= totalPages; i++) { %>
+                                        <a href="?page=<%= i %>" class="<%= i === currentPage ? 'active' : '' %>"><%= i %></a>
+                                    <% } %>
+            
+                                    <% if (currentPage < totalPages) { %>
+                                        <a href="?page=<%= currentPage + 1 %>">Next</a>
+                                    <% } %>
+                                </div>
+
+//sortting by date
+     <div class="dropdown">
+    <button class="btn btn-outline-secondary btn-sm dropdown-toggle d-flex align-items-center gap-2" 
+            type="button" 
+            data-bs-toggle="dropdown" 
+            aria-expanded="false">
+      
+      <!-- Up & Down Arrow Icon (like Shift key) -->
+      <span style="font-size: 1.1em; line-height: 1;">
+        <i class="fas fa-angle-up text-primary"></i><br>
+        <i class="fas fa-angle-down text-primary"></i>
+      </span>
+
+      <span class="fw-medium">
+        <%= query.sort === 'oldest' ? 'Earliest' : 'Latest' %>
+      </span>
+    </button>
+
+    <ul class="dropdown-menu dropdown-menu-end shadow">
+      <li>
+        <a class="dropdown-item <%= query.sort !== 'oldest' ? 'active bg-light' : '' %>" 
+   href="<%= buildUrl({ sort: 'newest' }) %>">
+  Latest
+</a>
+      </li>
+      <li>
+        <a class="dropdown-item <%= query.sort === 'oldest' ? 'active bg-light' : '' %>" 
+   href="<%= buildUrl({ sort: 'oldest' }) %>">
+  Earliest
+</a>
+      </li>
+    </ul>
+  </div>
+
+
+  //helper for search and sort
+  <% 
+// Safe & simple URL builder — NO req needed!
+const buildUrl = (newParams = {}) => {
+  const params = new URLSearchParams();
+  if (search) params.set('search', search);
+  if (currentPage && currentPage > 1) params.set('page', currentPage);
+
+  Object.entries(newParams).forEach(([key, value]) => {
+    if (value === null || value === undefined || value === '') {
+      params.delete(key);
+    } else {
+      params.set(key, value);
+    }
+  });
+
+  const query = params.toString();
+  return `/admin/orders${query ? '?' + query : ''}`;
+};
+%>

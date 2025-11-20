@@ -21,6 +21,7 @@
     <link rel="stylesheet" href="/assets/css/style.css">
     <!-- End layout styles -->
     <link rel="shortcut icon" href="/assets/images/favicon.png" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
 </head>
 
 <body>
@@ -43,7 +44,7 @@
                                                         <% } %>
                     <div class="card">
                         <div class="card-body">
-                            <form action="/admin/editCategory/<%= category._id %>" method="POST">
+                            <form id="editCategoryForm" action="/admin/editCategory/<%= category._id %>" method="POST">
                                 <div class="mb-3">
                                     <label for="categoryName" class="form-label">Category Name</label>
                                     <input type="text" class="form-control" id="categoryName" name="name" value="<%= category.name %>" required>
@@ -59,7 +60,56 @@
         
         
     </div>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>  
+<script>
 
+ document.addEventListener("DOMContentLoaded", function () {
+  const form = document.getElementById("editCategoryForm");
+
+  form.addEventListener("submit", async function (e) {
+    e.preventDefault();
+
+    const formData = new FormData(form);
+    const actionUrl = form.getAttribute("action"); // Get real URL with ID
+
+    try {
+      const res = await fetch(actionUrl, {
+        method: "POST",
+        body: new URLSearchParams(formData),
+        headers: {
+          "Content-Type": "application/x-www-form-urlencoded",
+        },
+      });
+
+      const result = await res.json();
+
+      if (res.ok && result.success) {
+        Swal.fire({
+          icon: "success",
+          title: "Success!",
+          text: result.message || "Category updated!",
+        }).then(() => {
+          window.location.href = "/admin/category";
+        });
+      } else {
+        
+        Swal.fire({
+          icon: "error",
+          title: "Error",
+          text: result.message || result.error || "Invalid input",
+        });
+      }
+    } catch (err) {
+      console.error(err);
+      Swal.fire({
+        icon: "error",
+        title: "Network Error",
+        text: "Failed to connect. Please try again.",
+      });
+    }
+  });
+});
+</script>
     <!-- Bootstrap JS and dependencies (Popper.js) -->
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://stackpath.bootstrapcdn.com/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>

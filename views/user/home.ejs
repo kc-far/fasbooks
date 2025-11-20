@@ -130,21 +130,29 @@
 								
 			
 								<div class="d-flex align-items-center mt-2">
-									<form action="/wishlistAdd/<%= item._id %>" method="POST" id="wishlist-form-<%= item._id %>">
-										<input type="hidden" name="productId" value="<%= item._id %>">
-										<button type="submit" class="btn btn-outline-dark py-2 px-3 me-2 d-flex align-items-center wishlist-btn">
-											<i class="bi bi-bookmark me-1"></i> Wishlist
-										</button>
-									</form>
+									
+									<form action="/wishlistAdd/<%= item._id %>" method="POST" id="wishlist-form-<%= item._id %>" class="me-2">
+                                        <input type="hidden" name="productId" value="<%= item._id %>">
+                                        <button type="submit" class="btn <%= wishlistStatus.includes(item._id.toString()) ? 'btn-success wishlist-added' : 'btn-outline-dark' %> 
+											    py-2 px-4 me-2 d-flex align-items-center wishlist-btn" 
+											    data-wishlisted="<%= wishlistStatus.includes(item._id.toString()) %>">
+                                            <% if (wishlistStatus.includes(item._id.toString())) { %>
+                                                <i class="bi bi-bookmark-heart-fill me-1"></i> Wishlisted
+				
+                                            <% } else { %>
+                                                <i class="bi bi-bookmark me-1"></i> Wishlist
+                                            <% } %>
+                                        </button>
+                                    </form>
 			
-								<form id="add-to-cart-form-<%= item._id %>">
+								    <form id="add-to-cart-form-<%= item._id %>">
 										<input type="hidden" name="productId" value="<%= item._id %>">
 										<% if (item.stock > 0) { %>
-											<button type="submit" class="btn btn-primary py-2 px-3 d-flex align-items-center">
+											<button type="submit" class="btn btn-primary py-2 px-4 ml-2 d-flex align-items-center">
 												<i class="bi bi-cart-check me-1"></i> Add Cart
 											</button>
 										<% } else { %>
-											<button type="button" class="btn btn-outline-danger py-2 px-4 rounded opacity-70 cursor-not-allowed" disabled>Sold Out</button>
+											<button type="button" class="btn btn-outline-danger py-2 px-4 ml-2 rounded opacity-70 cursor-not-allowed" disabled>Sold Out</button>
 										<% } %>
 									</form>
 									
@@ -159,12 +167,9 @@
 									
 	document.querySelectorAll('form[id^="add-to-cart-form-"]').forEach(form => {
         form.addEventListener('submit', async (e) => {
-            e.preventDefault(); // Prevent the form from submitting normally
+            e.preventDefault(); 
 
             const form = e.target;
-
-			console.log();
-			console.log(form);
 
 			let productId = form.id.split('-')[4] 
 			
@@ -172,23 +177,17 @@
 			formData.append('productId',form.id.split('-')[4])
 			
             try {
-                console.log("Submitting form..."); 
-
                 const response = await fetch(`/cart/add/${productId}`, {
                     method: 'POST',
                 });
 
                 // Ensure response is in JSON format
-                const data = await response.json(); // Parse the JSON response
-
-                console.log("Response data:", data); // Debugging message to check the response
-
-                // Handle success or failure based on the response
+                const data = await response.json(); 
                 if (data.success) {
                     // If successful, show a success alert with SweetAlert
                     Swal.fire({
                         title: 'Success',
-                        text: data.message, // Success message from the server
+                        text: data.message, 
                         icon: 'success',
                         confirmButtonText: 'OK'
                     });
@@ -196,7 +195,7 @@
                     // If unsuccessful, show an error alert
                     Swal.fire({
                         title: 'Error',
-                        text: data.message, // Error message from the server
+                        text: data.message, 
                         icon: 'error',
                         confirmButtonText: 'Try Again'
                     });
@@ -214,16 +213,14 @@
         });
     });
 
-				// Make sure to include SweetAlert library in your HTML file
-
-				let isSubmitting = false;
-
+				
+let isSubmitting = false;
 document.addEventListener('DOMContentLoaded', function() {
 	const wishlistButtons = document.querySelectorAll('.wishlist-btn');
 
 	wishlistButtons.forEach(button => {
 		button.addEventListener('click', function(e) {
-			e.preventDefault(); // Prevent default form submission
+			e.preventDefault();
 
 			if (isSubmitting) return; // Prevent multiple submissions
 
@@ -247,9 +244,9 @@ document.addEventListener('DOMContentLoaded', function() {
 					// Change icon on success
 					button.innerHTML = '<i class="bi bi-bookmark-heart-fill me-1"></i> Wishlisted';
 					button.classList.add('wishlist-added');
-					button.disabled = true;
-
-					// Show SweetAlert success message
+					//button.disabled = true;
+                    window.location.reload()
+					
 					Swal.fire({
 						icon: 'success',
 						title: 'Added to Wishlist!',
@@ -258,10 +255,10 @@ document.addEventListener('DOMContentLoaded', function() {
 						timer: 1500
 					});
 				} else {
-					// Show SweetAlert error message
+					
 					Swal.fire({
-						icon: 'error',
-						title: 'Oops...',
+						icon: 'warning',
+						title: 'Heyy..',
 						text: data.message || 'Could not add to wishlist.',
 					});
 					button.disabled = false;
@@ -285,9 +282,11 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 
+
+
+
 			</script>
 			
-
 				
 
 			<!-- Load more -->

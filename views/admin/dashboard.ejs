@@ -103,7 +103,7 @@
     </div>
 
     <!-- Frontend Script for Fetching Data and Updating UI -->
-    <script>
+    <!-- <script>
         let totalSalesChart, totalRevenueChart;
     
         async function updateDashboardData() {
@@ -197,6 +197,119 @@
         // Initialize the dashboard data
         updateDashboardData();
     </script>
-    
+     -->
+    <script>
+    let totalSalesChart, totalRevenueChart;
+
+    async function updateDashboardData() {
+        const period = document.getElementById('timePeriodFilter').value;
+        try {
+            const response = await axios.get(`/admin/dashboard-data?period=${period}`);
+            const data = response.data;
+
+            // NEW DATA STRUCTURE — MATCHING YOUR UPDATED BACKEND
+            const {
+                totalOrders,           // ← NEW: Total orders placed (not just delivered)
+                totalRevenue,          // ← Realized revenue from delivered
+                totalDiscount = 0,
+                itemsSold = 0,
+                bestSellingProducts = [],
+                bestSellingCategories = [],
+                dailyRevenue = [],
+                totalUsers = 0
+            } = data;
+
+            // UPDATE SUMMARY CARDS
+            document.getElementById('totalSalesCount').innerText = totalOrders || 0;
+            document.getElementById('totalRevenue').innerText = `₹${(totalRevenue || 0).toFixed(2)}`;
+            document.getElementById('totalUsers').innerText = totalUsers || 0;
+
+            // UPDATE CHARTS
+            updateTotalSalesChart(bestSellingProducts);
+            updateRevenueChart(dailyRevenue);  // ← Renamed for clarity
+
+            // UPDATE TABLES
+            updateTable('bestSellingProductsTable', bestSellingProducts);
+            updateTable('bestSellingCategoriesTable', bestSellingCategories);
+
+        } catch (error) {
+            console.error("Error fetching dashboard data:", error);
+            Swal.fire('Error', 'Failed to load dashboard data', 'error');
+        }
+    }
+
+    // Best Selling Products Chart
+    function updateTotalSalesChart(products) {
+        if (totalSalesChart) totalSalesChart.destroy();
+
+        const labels = products.map(p => p.name || 'Unknown');
+        const sold = products.map(p => p.totalSold || 0);
+
+        totalSalesChart = new Chart(document.getElementById('totalSalesChart').getContext('2d'), {
+            type: 'bar',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'Units Sold',
+                    data: sold,
+                    backgroundColor: '#4CAF50'
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: { legend: { display: false } },
+                scales: { y: { beginAtZero: true } }
+            }
+        });
+    }
+
+    // Revenue Over Time Chart (Fixed field name)
+    function updateRevenueChart(dailyRevenue) {
+        if (totalRevenueChart) totalRevenueChart.destroy();
+
+        const labels = dailyRevenue.map(d => d._id);           // date
+        const revenue = dailyRevenue.map(d => d.revenue || 0); // ← FIXED: was totalRevenue
+
+        totalRevenueChart = new Chart(document.getElementById('totalRevenueChart').getContext('2d'), {
+            type: 'line',
+            data: {
+                labels: labels.length ? labels : ['No data'],
+                datasets: [{
+                    label: 'Daily Revenue (₹)',
+                    data: revenue,
+                    borderColor: '#FF5722',
+                    backgroundColor: 'rgba(255, 87, 34, 0.1)',
+                    fill: true,
+                    tension: 0.3
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: { legend: { display: false } },
+                scales: { y: { beginAtZero: true } }
+            }
+        });
+    }
+
+    // Table Update
+    function updateTable(tableId, items) {
+        const tbody = document.getElementById(tableId).querySelector('tbody');
+        tbody.innerHTML = '';
+
+        if (items.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="2" class="text-center text-muted">No data</td></tr>';
+            return;
+        }
+
+        items.forEach(item => {
+            const name = item.name || item.categoryName || 'Unknown';
+            const row = `<tr><td>${name}</td><td><strong>${item.totalSold}</strong></td></tr>`;
+            tbody.insertAdjacentHTML('beforeend', row);
+        });
+    }
+
+    // Load on page open
+    updateDashboardData();
+</script>
 </body>
 </html>
